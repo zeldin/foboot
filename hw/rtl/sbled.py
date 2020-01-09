@@ -1,4 +1,4 @@
-from migen import Module, Signal, If, Instance, ClockSignal
+from migen import Module, Signal, If, Instance, ClockSignal, ResetSignal
 from litex.soc.integration.doc import ModuleDoc
 from litex.soc.interconnect.csr import AutoCSR, CSRStatus, CSRStorage, CSRField
 
@@ -75,42 +75,67 @@ class SBLED(Module, AutoCSR):
                 If(self.ctrl.storage[5], rgba_pwm[2].eq(self.raw.storage[2])).Else(rgba_pwm[2].eq(ledd_value[2])),
             ]
 
-        self.specials += Instance("SB_RGBA_DRV",
-            i_CURREN = self.ctrl.storage[1],
-            i_RGBLEDEN = self.ctrl.storage[2],
-            i_RGB0PWM = rgba_pwm[0],
-            i_RGB1PWM = rgba_pwm[1],
-            i_RGB2PWM = rgba_pwm[2],
-            o_RGB0 = pads.r,
-            o_RGB1 = pads.g,
-            o_RGB2 = pads.b,
-            p_CURRENT_MODE = "0b1",
-            p_RGB0_CURRENT = "0b000011",
-            p_RGB1_CURRENT = "0b000011",
-            p_RGB2_CURRENT = "0b000011",
-        )
 
-        self.specials += Instance("SB_LEDDA_IP",
-            i_LEDDCS = self.dat.re,
-            i_LEDDCLK = ClockSignal(),
-            i_LEDDDAT7 = self.dat.storage[7],
-            i_LEDDDAT6 = self.dat.storage[6],
-            i_LEDDDAT5 = self.dat.storage[5],
-            i_LEDDDAT4 = self.dat.storage[4],
-            i_LEDDDAT3 = self.dat.storage[3],
-            i_LEDDDAT2 = self.dat.storage[2],
-            i_LEDDDAT1 = self.dat.storage[1],
-            i_LEDDDAT0 = self.dat.storage[0],
-            i_LEDDADDR3 = self.addr.storage[3],
-            i_LEDDADDR2 = self.addr.storage[2],
-            i_LEDDADDR1 = self.addr.storage[1],
-            i_LEDDADDR0 = self.addr.storage[0],
-            i_LEDDDEN = self.dat.re,
-            i_LEDDEXE = self.ctrl.storage[0],
-            # o_LEDDON = led_is_on, # Indicates whether LED is on or not
-            # i_LEDDRST = ResetSignal(), # This port doesn't actually exist
-            o_PWMOUT0 = ledd_value[0],
-            o_PWMOUT1 = ledd_value[1],
-            o_PWMOUT2 = ledd_value[2],
-            o_LEDDON = Signal(),
-        )
+        if 0:
+            self.specials += Instance("SB_RGBA_DRV",
+                i_CURREN = self.ctrl.storage[1],
+                i_RGBLEDEN = self.ctrl.storage[2],
+                i_RGB0PWM = rgba_pwm[0],
+                i_RGB1PWM = rgba_pwm[1],
+                i_RGB2PWM = rgba_pwm[2],
+                o_RGB0 = pads.r,
+                o_RGB1 = pads.g,
+                o_RGB2 = pads.b,
+                p_CURRENT_MODE = "0b1",
+                p_RGB0_CURRENT = "0b000011",
+                p_RGB1_CURRENT = "0b000011",
+                p_RGB2_CURRENT = "0b000011",
+            )
+
+            self.specials += Instance("SB_LEDDA_IP",
+                i_LEDDCS = self.dat.re,
+                i_LEDDCLK = ClockSignal(),
+                i_LEDDDAT7 = self.dat.storage[7],
+                i_LEDDDAT6 = self.dat.storage[6],
+                i_LEDDDAT5 = self.dat.storage[5],
+                i_LEDDDAT4 = self.dat.storage[4],
+                i_LEDDDAT3 = self.dat.storage[3],
+                i_LEDDDAT2 = self.dat.storage[2],
+                i_LEDDDAT1 = self.dat.storage[1],
+                i_LEDDDAT0 = self.dat.storage[0],
+                i_LEDDADDR3 = self.addr.storage[3],
+                i_LEDDADDR2 = self.addr.storage[2],
+                i_LEDDADDR1 = self.addr.storage[1],
+                i_LEDDADDR0 = self.addr.storage[0],
+                i_LEDDDEN = self.dat.re,
+                i_LEDDEXE = self.ctrl.storage[0],
+                # o_LEDDON = led_is_on, # Indicates whether LED is on or not
+                # i_LEDDRST = ResetSignal(), # This port doesn't actually exist
+                o_PWMOUT0 = ledd_value[0],
+                o_PWMOUT1 = ledd_value[1],
+                o_PWMOUT2 = ledd_value[2],
+                o_LEDDON = Signal(),
+            )
+
+            
+        else:
+            self.specials += Instance("LED_control",
+                i_clk27M = ClockSignal(),
+                i_rst = ResetSignal(),
+                i_i_rgb_data = self.dat.storage,
+                i_i_rgb_addr = self.addr.storage,
+                i_i_rgb_den = self.dat.re,
+                i_i_rgb_exe = self.ctrl.storage[0],
+                # o_LEDDON = led_is_on, # Indicates whether LED is on or not
+                # i_LEDDRST = ResetSignal(), # This port doesn't actually exist
+                o_red_pwm = ledd_value[0],
+                o_grn_pwm = ledd_value[1],
+                o_blu_pwm = ledd_value[2]
+            )
+
+            self.comb += [
+                pads.r.eq(~rgba_pwm[0]),
+                pads.g.eq(~rgba_pwm[1]),
+                pads.b.eq(~rgba_pwm[2]),
+            ]
+            

@@ -26,7 +26,11 @@ from litex.soc.interconnect import wishbone
 
 from litex.soc.cores import up5kspram, spi_flash
 
-from litex_boards.partner.targets.fomu import _CRG
+#from litex_boards.partner.targets.fomu import _CRG
+
+from litex.soc.cores.clock import ECP5PLL
+from migen.genlib.resetsync import AsyncResetSynchronizer
+
 
 from valentyusb.usbcore import io as usbio
 from valentyusb.usbcore.cpu import epmem, unififo, epfifo, dummyusb, eptri
@@ -68,11 +72,69 @@ class Platform(LatticePlatform):
             LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io, _connectors, toolchain="icestorm")
             self.spi_size = 2 * 1024 * 1024
             self.spi_dummy = 4
+
+        elif revision == "orangecrab":
+            from litex_boards.partner.platforms.OrangeCrab_r2 import _io, _connectors
+            LatticePlatform.__init__(self, "LFE5U-25F-8MG285C", _io, _connectors, toolchain="trellis")
+            self.spi_size = 1 * 1024 * 1024
+            self.spi_dummy = 6
         else:
             raise ValueError("Unrecognized revision: {}.  Known values: evt, dvt, pvt, hacker".format(revision))
 
     def create_programmer(self):
         raise ValueError("programming is not supported")
+
+class _CRG(Module):
+    def __init__(self, platform):
+        clk48_raw = platform.request("clk48")
+
+        
+
+        reset_delay = Signal(64, reset=int(12e6*500e-6))
+        self.clock_domains.cd_por = ClockDomain()
+        self.reset = Signal()
+
+        self.clock_domains.cd_sys = ClockDomain()
+        self.clock_domains.cd_usb_12 = ClockDomain()
+        self.clock_domains.cd_usb_48 = ClockDomain()
+
+        platform.add_period_constraint(self.cd_usb_48.clk, 1e9/48e6)
+        platform.add_period_constraint(self.cd_sys.clk, 1e9/12e6)
+        platform.add_period_constraint(self.cd_usb_12.clk, 1e9/12e6)
+
+        # POR reset logic- POR generated from sys clk, POR logic feeds sys clk
+        # reset.
+        self.comb += [
+            self.cd_por.clk.eq(self.cd_usb_12.clk),
+            self.cd_sys.rst.eq(reset_delay != 0),
+            self.cd_usb_12.rst.eq(reset_delay != 0),
+        ]
+
+        # POR reset logic- POR generated from sys clk, POR logic feeds sys clk
+        # reset.
+        self.comb += [
+            self.cd_usb_48.rst.eq(reset_delay != 0),
+        ]
+
+        self.submodules.pll = pll = ECP5PLL()
+        pll.register_clkin(clk48_raw, 48e6)
+
+        pll.create_clkout(self.cd_usb_48, 48e6, 0)
+        pll.create_clkout(self.cd_usb_12, 12e6, 0)
+
+        self.comb += self.cd_sys.clk.eq(self.cd_usb_12.clk)
+        #self.comb += self.cd_sys.clk.eq(clk48_raw)
+
+        self.sync.por += \
+            If(reset_delay != 0,
+                reset_delay.eq(reset_delay - 1)
+            )
+        self.specials += AsyncResetSynchronizer(self.cd_por, self.reset)
+        #self.specials += AsyncResetSynchronizer(self.cd_sys, ~pll.locked | (reset_delay != 0))
+        #self.specials += AsyncResetSynchronizer(self.cd_usb_48, ~pll.locked)
+        #self.specials += AsyncResetSynchronizer(self.cd_usb_12, ~pll.locked)
+
+        
 
 
 class BaseSoC(SoCCore, AutoDoc):
@@ -162,17 +224,22 @@ class BaseSoC(SoCCore, AutoDoc):
                 self.submodules.spibone = ClockDomainsRenamer("usb_12")(spibone.SpiWishboneBridge(spi_pads, wires=4))
                 self.add_wb_master(self.spibone.wishbone)
             if hasattr(self, "cpu") and not isinstance(self.cpu, CPUNone):
-                self.cpu.use_external_variant("rtl/VexRiscv_Fomu_Debug.v")
-                os.path.join(output_dir, "gateware")
-                self.register_mem("vexriscv_debug", 0xf00f0000, self.cpu.debug_bus, 0x100)
+                if platform.device[:4] != "LFE5":
+                    self.cpu.use_external_variant("rtl/VexRiscv_Fomu_Debug.v")
+                #self.register_mem("vexriscv_debug", 0xf00f0000, self.cpu.debug_bus, 0x100)
         else:
             if hasattr(self, "cpu") and not isinstance(self.cpu, CPUNone):
-                self.cpu.use_external_variant("rtl/VexRiscv_Fomu.v")
+                if platform.device[:4] != "LFE5":
+                    self.cpu.use_external_variant("rtl/VexRiscv_Fomu.v")
 
         # SPRAM- UP5K has single port RAM, might as well use it as SRAM to
         # free up scarce block RAM.
         spram_size = 128*1024
-        self.submodules.spram = up5kspram.Up5kSPRAM(size=spram_size)
+        if platform.device[:4] == "LFE5":
+            spram_size = 16*1024
+            self.submodules.spram = wishbone.SRAM(spram_size)
+        else:
+            self.submodules.spram = up5kspram.Up5kSPRAM(size=spram_size)
         self.register_mem("sram", self.mem_map["sram"], self.spram.bus, spram_size)
 
         # Add a Messible for device->host communications
@@ -187,7 +254,7 @@ class BaseSoC(SoCCore, AutoDoc):
         elif boot_source == "bios":
             kwargs['cpu_reset_address'] = 0
             if bios_file is None:
-                self.integrated_rom_size = bios_size = 0x2000
+                self.integrated_rom_size = bios_size = 0x4000
                 self.submodules.rom = wishbone.SRAM(bios_size, read_only=True, init=[])
                 self.register_rom(self.rom.bus, bios_size)
             else:
@@ -210,6 +277,7 @@ class BaseSoC(SoCCore, AutoDoc):
         # for doing writes.
         spi_pads = platform.request("spiflash4x")
         self.submodules.lxspi = spi_flash.SpiFlashDualQuad(spi_pads, dummy=platform.spi_dummy, endianness="little")
+        self.lxspi.add_clk_primitive(platform.device)
         self.register_mem("spiflash", self.mem_map["spiflash"], self.lxspi.bus, size=platform.spi_size)
 
         # Add USB pads, as well as the appropriate USB controller.  If no CPU is
@@ -230,8 +298,9 @@ class BaseSoC(SoCCore, AutoDoc):
             self.comb += pulldown.oe.eq(0)
 
         # Add GPIO pads for the touch buttons
-        platform.add_extension(TouchPads.touch_device)
-        self.submodules.touch = TouchPads(platform.request("touch_pads"))
+        if platform.device[:4] != "LFE5":
+            platform.add_extension(TouchPads.touch_device)
+            self.submodules.touch = TouchPads(platform.request("touch_pads"))
 
         # Allow the user to reboot the ICE40.  Additionally, connect the CPU
         # RESET line to a register that can be modified, to allow for
@@ -243,6 +312,10 @@ class BaseSoC(SoCCore, AutoDoc):
             )
 
         self.submodules.rgb = SBLED(platform.revision, platform.request("rgb_led"))
+        if platform.device[:4] == "LFE5":
+            vdir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "rtl")
+            platform.add_source(os.path.join(vdir, "sbled.v"))
+
         self.submodules.version = Version(platform.revision, self, pnr_seed, models=[
                 ("0x45", "E", "Fomu EVT"),
                 ("0x44", "D", "Fomu DVT"),
@@ -256,20 +329,20 @@ class BaseSoC(SoCCore, AutoDoc):
         # and the "-dffe_min_ce_use 4" flag prevents Yosys from generating a
         # Clock Enable signal for a LUT that has fewer than 4 flip-flops.
         # This increases density, and lets us use the FPGA more efficiently.
-        platform.toolchain.nextpnr_yosys_template[2] += " -relut -abc2 -dffe_min_ce_use 4 -relut"
-        if use_dsp:
-            platform.toolchain.nextpnr_yosys_template[2] += " -dsp"
+        #platform.toolchain.nextpnr_yosys_template[2] += " -relut -abc2 -dffe_min_ce_use 4 -relut"
+        #if use_dsp:
+        #    platform.toolchain.nextpnr_yosys_template[2] += " -dsp"
 
         # Disable final deep-sleep power down so firmware words are loaded
         # onto softcore's address bus.
-        platform.toolchain.build_template[3] = "icepack -s {build_name}.txt {build_name}.bin"
-        platform.toolchain.nextpnr_build_template[2] = "icepack -s {build_name}.txt {build_name}.bin"
+        #platform.toolchain.build_template[3] = "icepack -s {build_name}.txt {build_name}.bin"
+        #platform.toolchain.nextpnr_build_template[2] = "icepack -s {build_name}.txt {build_name}.bin"
 
         # Allow us to set the nextpnr seed
-        platform.toolchain.nextpnr_build_template[1] += " --seed " + str(pnr_seed)
+        #platform.toolchain.nextpnr_build_template[1] += " --seed " + str(pnr_seed)
 
-        if placer is not None:
-            platform.toolchain.nextpnr_build_template[1] += " --placer {}".format(placer)
+        #if placer is not None:
+        #    platform.toolchain.nextpnr_build_template[1] += " --placer {}".format(placer)
 
     def copy_memory_file(self, src):
         import os
@@ -341,7 +414,7 @@ def main():
         help="Don't build gateware or software, only build documentation"
     )
     parser.add_argument(
-        "--revision", choices=["evt", "dvt", "pvt", "hacker"], required=True,
+        "--revision", choices=["evt", "dvt", "pvt", "hacker", "orangecrab"], required=True,
         help="build foboot for a particular hardware revision"
     )
     parser.add_argument(
@@ -438,25 +511,47 @@ def main():
     lxsocdoc.generate_svd(soc, "build/software", vendor="Foosn", name="Fomu")
 
     if not args.document_only:
-        make_multiboot_header(os.path.join(output_dir, "gateware", "multiboot-header.bin"),
-                            warmboot_offsets)
+        if platform.device[:4] == "LFE5":
+            # create a bitstream for loading into FLASH
+            input_config = os.path.join(output_dir, "gateware", "top.config")
+            output_bitstream = os.path.join(output_dir, "gateware", "foboot.bit")
+            os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x180000 --input {input_config} --bit {output_bitstream}")
 
-        with open(os.path.join(output_dir, 'gateware', 'multiboot-header.bin'), 'rb') as multiboot_header_file:
-            multiboot_header = multiboot_header_file.read()
-            with open(os.path.join(output_dir, 'gateware', 'top.bin'), 'rb') as top_file:
-                top = top_file.read()
-                with open(os.path.join(output_dir, 'gateware', 'top-multiboot.bin'), 'wb') as top_multiboot_file:
-                    top_multiboot_file.write(multiboot_header)
-                    top_multiboot_file.write(top)
 
-        print(
-    """Foboot build complete.  Output files:
-        {}/gateware/top.bin             Bitstream file.  Load this onto the FPGA for testing.
-        {}/gateware/top-multiboot.bin   Multiboot-enabled bitstream file.  Flash this onto FPGA ROM.
-        {}/gateware/top.v               Source Verilog file.  Useful for debugging issues.
-        {}/software/include/generated/  Directory with header files for API access.
-        {}/software/bios/bios.elf       ELF file for debugging bios.
-    """.format(output_dir, output_dir, output_dir, output_dir, output_dir))
+            output_svf = os.path.join(output_dir, "gateware", "top.svf")
+            os.system(f"ecppack --input {input_config} --svf {output_svf}")
+
+
+            print(
+        f"""Foboot build complete.  Output files:
+            {output_dir}/gateware/top.bit             Basic Bitstream file.  Load this onto the FPGA for testing.
+            {output_dir}/gateware/foboot.bit          Optimised Bitstream file. (QSPI, Compressed, Higher CLK)  Load this into FLASH.
+            {output_dir}/gateware/top.svf             Serial Vector Format File. Useful when loading over JTAG.
+            {output_dir}/gateware/top.v               Source Verilog file.  Useful for debugging issues.
+            {output_dir}/software/include/generated/  Directory with header files for API access.
+            {output_dir}/software/bios/bios.elf       ELF file for debugging bios.
+        """)
+        else:
+            make_multiboot_header(os.path.join(output_dir, "gateware", "multiboot-header.bin"),
+                                warmboot_offsets)
+
+            with open(os.path.join(output_dir, 'gateware', 'multiboot-header.bin'), 'rb') as multiboot_header_file:
+                multiboot_header = multiboot_header_file.read()
+                with open(os.path.join(output_dir, 'gateware', 'top.bin'), 'rb') as top_file:
+                    top = top_file.read()
+                    with open(os.path.join(output_dir, 'gateware', 'top-multiboot.bin'), 'wb') as top_multiboot_file:
+                        top_multiboot_file.write(multiboot_header)
+                        top_multiboot_file.write(top)
+
+            print(
+        """Foboot build complete.  Output files:
+            {}/gateware/top.bin             Bitstream file.  Load this onto the FPGA for testing.
+            {}/gateware/top-multiboot.bin   Multiboot-enabled bitstream file.  Flash this onto FPGA ROM.
+            {}/gateware/top.v               Source Verilog file.  Useful for debugging issues.
+            {}/software/include/generated/  Directory with header files for API access.
+            {}/software/bios/bios.elf       ELF file for debugging bios.
+        """.format(output_dir, output_dir, output_dir, output_dir, output_dir))
+
 
 if __name__ == "__main__":
     main()

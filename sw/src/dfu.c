@@ -30,7 +30,7 @@
 #include <generated/csr.h>
 
 #ifndef CONFIG_RESCUE_IMAGE_OFFSET
-#  define CONFIG_RESCUE_IMAGE_OFFSET 262144
+#  define CONFIG_RESCUE_IMAGE_OFFSET 0x180000
 #endif
 #define RAM_BOOT_SENTINAL 0x17ab0f23
 

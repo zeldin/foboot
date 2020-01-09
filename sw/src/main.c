@@ -14,7 +14,7 @@ struct ff_spi *spi;
 // ICE40UP5K bitstream images (with SB_MULTIBOOT header) are
 // 104250 bytes.  The SPI flash has 4096-byte erase blocks.
 // The smallest divisible boundary is 4096*26.
-#define FBM_OFFSET ((void *)(SPIFLASH_BASE + 0x1a000))
+#define FBM_OFFSET ((void *)(SPIFLASH_BASE + 0x0000))
 
 void isr(void)
 {
@@ -24,6 +24,7 @@ void isr(void)
 
     if (irqs & (1 << USB_INTERRUPT))
         usb_isr();
+    
 }
 
 static void riscv_reboot_to(const void *addr, uint32_t boot_config) {
@@ -89,6 +90,7 @@ static void riscv_reboot_to(const void *addr, uint32_t boot_config) {
 static int nerve_pinch(void) {
     unsigned int i;
 
+#ifdef CSR_TOUCH_BASE
     // Set pin 2 as output, and pin 0 as input, and see if it loops back.
     touch_oe_write((1 << 2) | (0 << 0));
 
@@ -101,6 +103,9 @@ static int nerve_pinch(void) {
             return 0;
     }
     return 1;
+#else
+    return 1;
+#endif
 }
 
 /// If the updater exists and has a valid header, then jump
@@ -198,7 +203,7 @@ void reboot(void) {
         // Issue a reboot
         warmboot_to_image(2);
     }
-    __builtin_unreachable();
+    //__builtin_unreachable();
 }
 
 static void init(void)
@@ -208,6 +213,7 @@ static void init(void)
     spiFree();
     riscv_reboot_to((void *)FLASH_BOOT_ADDRESS, 0);
 #endif
+
     rgb_init();
     usb_init();
 #if defined(CSR_PICORVSPI_BASE)
@@ -227,6 +233,7 @@ static void init(void)
 #endif
     irq_setmask(0);
     irq_setie(1);
+
     time_init();
     dfu_init();
 }
@@ -238,7 +245,9 @@ int main(int argc, char **argv)
 
     init();
 
+
     usb_connect();
+    
     while (1)
     {
         usb_poll();
