@@ -3,25 +3,9 @@ from litex.soc.integration.doc import ModuleDoc
 from litex.soc.interconnect.csr import AutoCSR, CSRStatus, CSRStorage, CSRField
 import lxsocdoc
 
-class SBWarmBoot(Module, AutoCSR):
-    def __init__(self, parent, offsets=None):
+class ECPReboot(Module, AutoCSR):
+    def __init__(self, parent):
 
-        table = ""
-        if offsets is not None:
-            arr = [["Image", "Offset"]]
-            for i,offset in enumerate(offsets):
-                arr.append([str(i), str(offset)])
-            table = "\nYou can use this block to reboot into one of these four addresses:\n\n" \
-                  + lxsocdoc.rst.make_table(arr)
-        self.intro = ModuleDoc("""FPGA Reboot Interface
-
-            This module provides the ability to reboot the FPGA.  It is based on the
-            ``SB_WARMBOOT`` primitive built in to the FPGA.
-
-            When power is applied to the FPGA, it reads configuration data from the
-            onboard flash chip.  This contains reboot offsets for four images.  It then
-            booted from the first image, but kept note of the other addresses.
-            {}""".format(table))
         self.ctrl = CSRStorage(fields=[
             CSRField("image", size=2, description="""
                         Which image to reboot to.  ``SB_WARMBOOT`` supports four images that
@@ -48,10 +32,16 @@ class SBWarmBoot(Module, AutoCSR):
             do_reset.eq(self.ctrl.storage[2] & self.ctrl.storage[3] & ~self.ctrl.storage[4]
                       & self.ctrl.storage[5] & ~self.ctrl.storage[6] & self.ctrl.storage[7])
         ]
-        self.specials += Instance("SB_WARMBOOT",
-            i_S0   = self.ctrl.storage[0],
-            i_S1   = self.ctrl.storage[1],
-            i_BOOT = do_reset,
-        )
+
+        reset_latch = Signal(reset=0)
+        self.sync += [
+            reset_latch.eq(do_reset | reset_latch | ~parent.platform.request("usr_btn"))
+        ]
+
+        rst = parent.platform.request("rst_n")
+        self.comb += [
+            rst.eq(~reset_latch)
+        ]
+        
         parent.config["BITSTREAM_SYNC_HEADER1"] = 0x7e99aa7e
         parent.config["BITSTREAM_SYNC_HEADER2"] = 0x7eaa997e
