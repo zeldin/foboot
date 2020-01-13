@@ -38,7 +38,6 @@ import os
 
 from rtl.version import Version
 from rtl.romgen import RandomFirmwareROM, FirmwareROM
-from rtl.sbled import SBLED
 from rtl.messible import Messible
         
 
@@ -200,7 +199,11 @@ class BaseSoC(SoCCore, AutoDoc):
             self.comb += pulldown.oe.eq(0)
 
         # Add GPIO pads for the touch buttons
-        platform.add_touch(self)
+        if hasattr(platform, "add_touch"):
+            platform.add_touch(self)
+
+        if hasattr(platform, "add_button"):
+            platform.add_button(self)
 
         # Allow the user to reboot the ICE40.  Additionally, connect the CPU
         # RESET line to a register that can be modified, to allow for
@@ -211,10 +214,7 @@ class BaseSoC(SoCCore, AutoDoc):
                 i_externalResetVector=self.reboot.addr.storage,
             )
 
-        self.submodules.rgb = SBLED(platform.revision, platform.request("rgb_led"))
-        if platform.device[:4] == "LFE5":
-            vdir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "rtl")
-            platform.add_source(os.path.join(vdir, "sbled.v"))
+        platform.add_rgb(self)
 
         self.submodules.version = Version(platform.revision, self, pnr_seed, models=[
                 ("0x45", "E", "Fomu EVT"),
@@ -224,7 +224,8 @@ class BaseSoC(SoCCore, AutoDoc):
                 ("0x3f", "?", "Unknown model"),
             ])
 
-        platform.build_templates(use_dsp, pnr_seed, placer)
+        if hasattr(platform, "build_templates"):
+            platform.build_templates(use_dsp, pnr_seed, placer)
             
 
 def main():

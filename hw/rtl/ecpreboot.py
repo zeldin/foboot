@@ -35,7 +35,7 @@ class ECPReboot(Module, AutoCSR):
 
         reset_latch = Signal(reset=0)
         self.sync += [
-            reset_latch.eq(do_reset | reset_latch | ~parent.platform.request("usr_btn"))
+            reset_latch.eq(do_reset | reset_latch)
         ]
 
         rst = parent.platform.request("rst_n")

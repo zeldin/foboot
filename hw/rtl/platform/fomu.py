@@ -12,6 +12,7 @@ import spibone
 from ..romgen import RandomFirmwareROM, FirmwareROM
 from ..fomutouch import TouchPads
 from ..sbwarmboot import SBWarmBoot
+from rtl.sbled import SBLED
 
 import argparse
 import os
@@ -79,6 +80,9 @@ class Platform(LatticePlatform):
     def add_touch(self, soc):
         self.add_extension(TouchPads.touch_device)
         soc.submodules.touch = TouchPads(self.request("touch_pads"))
+
+    def add_rgb(self, soc):
+        soc.submodules.rgb = SBLED(self.revision, self.request("rgb_led"))
 
     def create_programmer(self):
         raise ValueError("programming is not supported")

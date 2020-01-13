@@ -14,12 +14,13 @@ import spibone
 from ..version import Version
 from ..romgen import RandomFirmwareROM, FirmwareROM
 from ..fomutouch import TouchPads
-from ..sbled import SBLED
+from ..pwmled import PWMLed
 from ..ecpreboot import ECPReboot
 from ..messible import Messible
 
 from litex.soc.interconnect.wishbone import SRAM
 
+from litex.build.generic_platform import *
 
 import argparse
 import os
@@ -28,22 +29,27 @@ import os
 
 def add_platform_args(parser):
     parser.add_argument(
-        "--revision", choices=["r0.1", "r0.2"], required=True,
+        "--revision", choices=["r0_1", "r0_2", "ex"], required=True,
         help="build foboot for a particular hardware revision"
+    )
+    parser.add_argument(
+        "--device", choices=["25F", "45F", "85F"], default="25F",
+        help="Select device density"
     )
 
 
 class Platform(LatticePlatform):
-    def __init__(self, revision=None, device="LFE5U-25F", toolchain="trellis"):
+    def __init__(self, revision=None, device="25F", toolchain="trellis"):
         self.revision = revision
-        if revision == "r0.1":
+        self.device = device
+        if revision == "r0_1":
             from litex_boards.partner.platforms.OrangeCrab import _io, _connectors
-            LatticePlatform.__init__(self, device + "-8MG285C", _io, _connectors, toolchain=toolchain)
+            LatticePlatform.__init__(self, "LFE5U-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
             self.spi_size = 1 * 1024 * 1024
             self.spi_dummy = 6
-        elif revision == "r0.2":
+        elif revision == "r0_2":
             from litex_boards.partner.platforms.OrangeCrab_r2 import _io, _connectors
-            LatticePlatform.__init__(self, device + "-8MG285C", _io, _connectors, toolchain=toolchain)
+            LatticePlatform.__init__(self, "LFE5U-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
             self.spi_size = 16 * 1024 * 1024
             self.spi_dummy = 4
         else:
@@ -68,11 +74,11 @@ class Platform(LatticePlatform):
     def add_reboot(self, soc):
         soc.submodules.reboot = ECPReboot(soc)
     
-    def add_touch(self, soc):
-        pass
-
-    def build_templates(self, use_dsp, pnr_seed, placer):
-        pass
+    def add_rgb(self, soc):
+        soc.submodules.rgb = PWMLed(self.revision, self.request("rgb_led"))
+        #if platform.device[:4] == "LFE5":
+        #    vdir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "rtl")
+        #    platform.add_source(os.path.join(vdir, "sbled.v"))
 
     def finalise(self, output_dir):
         # create a bitstream for loading into FLASH
@@ -80,7 +86,7 @@ class Platform(LatticePlatform):
         output_bitstream = os.path.join(output_dir, "gateware", "foboot.bit")
         os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x180000 --input {input_config} --bit {output_bitstream}")
 
-
+        # create a SVF for loading with JTAG adapter
         output_svf = os.path.join(output_dir, "gateware", "top.svf")
         os.system(f"ecppack --input {input_config} --svf {output_svf}")
 
@@ -99,8 +105,6 @@ class Platform(LatticePlatform):
 class _CRG(Module):
     def __init__(self, platform):
         clk48_raw = platform.request("clk48")
-
-        
 
         reset_delay = Signal(64, reset=int(12e6*500e-6))
         self.clock_domains.cd_por = ClockDomain()
@@ -135,8 +139,7 @@ class _CRG(Module):
         pll.create_clkout(self.cd_usb_12, 12e6, 0)
 
         self.comb += self.cd_sys.clk.eq(self.cd_usb_12.clk)
-        #self.comb += self.cd_sys.clk.eq(clk48_raw)
-
+        
         self.sync.por += \
             If(reset_delay != 0,
                 reset_delay.eq(reset_delay - 1)
