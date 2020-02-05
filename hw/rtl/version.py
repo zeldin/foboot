@@ -5,7 +5,7 @@ from litex.soc.integration.doc import AutoDoc, ModuleDoc
 from litex.soc.interconnect.csr import AutoCSR, CSRStatus, CSRStorage, CSRField
 
 class Version(Module, AutoCSR, AutoDoc):
-    def __init__(self, model, parent, seed=0, models=[]):
+    def __init__(self, model, hw_platform, parent, seed=0, models=[]):
         self.intro = ModuleDoc("""SoC Version Information
 
             This block contains various information about the state of the source code
@@ -77,15 +77,23 @@ class Version(Module, AutoCSR, AutoDoc):
             return (major, minor, rev, gitrev, gitextra, dirty)
 
         model_val = 0x3f # '?'
-        parent.config["FOMU_REV"] = model.upper()
-        if model == "evt":
-            model_val = 0x45 # 'E'
-        elif model == "dvt":
-            model_val = 0x44 # 'D'
-        elif model == "pvt":
-            model_val = 0x50 # 'P'
-        elif model == "hacker":
-            model_val = 0x48 # 'H'
+        if hw_platform == "fomu":
+            parent.config["FOMU_REV"] = model.upper()
+            if model == "evt":
+                model_val = 0x45 # 'E'
+            elif model == "dvt":
+                model_val = 0x44 # 'D'
+            elif model == "pvt":
+                model_val = 0x50 # 'P'
+            elif model == "hacker":
+                model_val = 0x48 # 'H'
+        elif hw_platform == "orangecrab":
+            parent.config["ORANGECRAB_REV"] = model.upper()
+            if model == "r0_1":
+                model_val = 0x10 # 'r0.1'
+            elif model == "r0_2":
+                model_val = 0x11 # 'r0.2'
+
         (major, minor, rev, gitrev, gitextra, dirty) = get_gitver()
 
         self.major = CSRStatus(8, reset=major, description="Major git tag version.  For example, this firmware was built from git tag ``v{}.{}.{}``, so this value is ``{}``.".format(major, minor, rev, major))

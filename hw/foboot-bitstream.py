@@ -216,11 +216,13 @@ class BaseSoC(SoCCore, AutoDoc):
 
         platform.add_rgb(self)
 
-        self.submodules.version = Version(platform.revision, self, pnr_seed, models=[
+        self.submodules.version = Version(platform.revision, platform.hw_platform, self, pnr_seed, models=[
                 ("0x45", "E", "Fomu EVT"),
                 ("0x44", "D", "Fomu DVT"),
                 ("0x50", "P", "Fomu PVT (production)"),
                 ("0x48", "H", "Fomu Hacker"),
+                ("0x11", "1", "OrangeCrab r0.1"),
+                ("0x12", "2", "OrangeCrab r0.2"),
                 ("0x3f", "?", "Unknown model"),
             ])
 
@@ -277,7 +279,10 @@ def main():
     args = parser.parse_args()
 
     # load our platform file
-    platform = Platform(revision=args.revision)
+    if args.platform == "orangecrab":
+        platform = Platform(revision=args.revision, device=args.device)
+    elif args.platform == "fomu":
+        platform = Platform(revision=args.revision)
 
     output_dir = 'build'
 

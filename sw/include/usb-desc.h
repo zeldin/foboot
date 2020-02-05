@@ -57,6 +57,7 @@ struct usb_string_descriptor_struct {
 };
 
 #define NUM_USB_BUFFERS           8
+#if defined(CONFIG_FOMU_REV)
 #define VENDOR_ID                 0x1209    // pid.codes
 #define PRODUCT_ID                0x5bf0    // Assigned to Fomu project
 #define DEVICE_VER                0x0101    // Bootloader version
@@ -73,6 +74,19 @@ struct usb_string_descriptor_struct {
 #else
 #define PRODUCT_NAME              u"Fomu DFU Bootloader " GIT_VERSION
 #endif
+#elif defined(CONFIG_ORANGECRAB_REV)
+#define VENDOR_ID                 0x1209    // pid.codes
+#define PRODUCT_ID                0x5bf0    // Assigned to Fomu project TODO: Change This
+#define DEVICE_VER                0x0101    // Bootloader version
+#define MANUFACTURER_NAME         u"GsD"
+#define MANUFACTURER_NAME_LEN     sizeof(MANUFACTURER_NAME)
+#if defined(CONFIG_ORANGECRAB_REV_R0_1)
+#define PRODUCT_NAME              u"OrangeCrab r0.1 DFU Bootloader " GIT_VERSION
+#elif defined(CONFIG_ORANGECRAB_REV_R0_2)
+#define PRODUCT_NAME              u"OrangeCrab r0.2 DFU Bootloader " GIT_VERSION
+#endif
+#endif
+
 #define PRODUCT_NAME_LEN          sizeof(PRODUCT_NAME)
 #define EP0_SIZE                  64
 #define NUM_INTERFACE             1

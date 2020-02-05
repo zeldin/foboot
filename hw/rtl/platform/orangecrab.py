@@ -13,7 +13,7 @@ import spibone
 
 from ..version import Version
 from ..romgen import RandomFirmwareROM, FirmwareROM
-from ..fomutouch import TouchPads
+from ..button import Button
 from ..pwmled import PWMLed
 from ..ecpreboot import ECPReboot
 from ..messible import Messible
@@ -29,7 +29,7 @@ import os
 
 def add_platform_args(parser):
     parser.add_argument(
-        "--revision", choices=["r0_1", "r0_2", "ex"], required=True,
+        "--revision", choices=["r0_1", "r0_2"], required=True,
         help="build foboot for a particular hardware revision"
     )
     parser.add_argument(
@@ -42,14 +42,15 @@ class Platform(LatticePlatform):
     def __init__(self, revision=None, device="25F", toolchain="trellis"):
         self.revision = revision
         self.device = device
+        self.hw_platform = "orangecrab"
         if revision == "r0_1":
             from litex_boards.partner.platforms.OrangeCrab import _io, _connectors
-            LatticePlatform.__init__(self, "LFE5U-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
+            LatticePlatform.__init__(self, "LFE5UM5G-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
             self.spi_size = 1 * 1024 * 1024
             self.spi_dummy = 6
         elif revision == "r0_2":
             from litex_boards.partner.platforms.OrangeCrab_r2 import _io, _connectors
-            LatticePlatform.__init__(self, "LFE5U-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
+            LatticePlatform.__init__(self, "LFE5UM5G-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
             self.spi_size = 16 * 1024 * 1024
             self.spi_dummy = 4
         else:
@@ -79,6 +80,10 @@ class Platform(LatticePlatform):
         #if platform.device[:4] == "LFE5":
         #    vdir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "rtl")
         #    platform.add_source(os.path.join(vdir, "sbled.v"))
+
+    def add_button(self, soc):
+        soc.add_csr("button")
+        soc.submodules.button = Button(self.request("usr_btn"))
 
     def finalise(self, output_dir):
         # create a bitstream for loading into FLASH

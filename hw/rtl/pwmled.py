@@ -123,38 +123,76 @@ class ecpled(Module):
             )
         ]
 
-        clk_div_counter = Signal(10)
-        clk32k_en = Signal()
 
-        # create a 32Khz Clock
-        self.sync += [
-            If(clk_div_counter >= prescale_reg,
-                clk_div_counter.eq(0),
-                clk32k_en.eq(1)
-            ).Else(
-                clk_div_counter.eq(clk_div_counter + 1),
-                clk32k_en.eq(0)
-            )
-        ]
+        pwm_value = Signal(8)
+        self.submodules.pwm_r = PWM(self.red_pwm, 8, pwm_value, pwm_red_reg)
+        self.submodules.pwm_g = PWM(self.green_pwm, 8, pwm_value, pwm_green_reg)
+        self.submodules.pwm_b = PWM(self.blue_pwm, 8, pwm_value, pwm_blue_reg)
 
-        #Inner loop sholud be operating at 32Khz
-        #self.sync += [
-        #    If(clk32k_en,
-#
-        #    )
-        #]
+        updown_clock = Signal()
+        updown_clock_strobe = Signal()
+
+        self.submodules.updown_clk_div = \
+            ClockDiv(15, updown_clock, updown_clock_strobe)
+
+        self.submodules.updown = \
+            TickUpdownCounter(pwm_value, updown_clock_strobe, 8)
+        
 
 
-        pwm_count = Signal(8)
+class PWM(Module):
+    def __init__(self, pwm, bitwidth, value, max_value):
+        pwm_counter = Signal(bitwidth)
+        accumulator = Signal(bitwidth+1)
+        self.sync += accumulator.eq(accumulator[:bitwidth] + value + max_value)
+        self.comb += pwm.eq(accumulator[bitwidth])
+        self.sync += pwm_counter.eq(pwm_counter + 1)
 
-        self.sync += [
-            #If(clk32k_en,
-                pwm_count.eq(pwm_count + 1),
-            #)
-        ]            
+class UpdownCounter(Module):
+    def __init__(self, counter, bitwidth):
+        icounter = Signal(bitwidth+1)
+        direction = Signal()
 
-        self.comb += [
-            self.red_pwm.eq(pwm_count < pwm_red_reg),
-            self.green_pwm.eq(pwm_count < pwm_green_reg),
-            self.blue_pwm.eq(pwm_count < pwm_blue_reg),
-        ]
+        self.comb += direction.eq(icounter[bitwidth])
+        self.comb += If(direction,
+                        counter.eq(~icounter[0:bitwidth])
+                        ).Else(
+                        counter.eq( icounter[0:bitwidth]))
+
+        icounter_inv = Signal(bitwidth)
+        self.comb += icounter_inv.eq(~icounter[0:bitwidth])
+        self.sync += If(icounter_inv == 0,
+                            icounter.eq(icounter + 2)
+                        ).Else(
+                            icounter.eq(icounter + 1))
+
+class TickUpdownCounter(Module):
+    def __init__(self, counter, tick, bitwidth):
+        icounter = Signal(bitwidth+1)
+        direction = Signal()
+
+        self.comb += direction.eq(icounter[bitwidth])
+        self.comb += If(direction,
+                        counter.eq(~icounter[0:bitwidth])
+                        ).Else(
+                        counter.eq( icounter[0:bitwidth]))
+
+        icounter_inv = Signal(bitwidth)
+        self.comb += icounter_inv.eq(~icounter[0:bitwidth])
+        self.sync += If(tick,
+                        If((icounter_inv) == 0,
+                            icounter.eq(icounter + 2)
+                        ).Else(
+                            icounter.eq(icounter + 1)))
+
+class ClockDiv(Module):
+    def __init__(self, divbitwidth, divout, divtick):
+        divcounter = Signal(divbitwidth+1)
+        # count every clock tick
+        self.sync += divcounter.eq(divcounter + 1)
+        # output 50% duty cycle clock output
+        self.comb += divout.eq(divcounter[divbitwidth])
+        # output a one clock wide strobe
+        divcounter_inv = Signal(divbitwidth)
+        self.comb += divcounter_inv.eq(~divcounter[0:divbitwidth])
+        self.comb += divtick.eq(divcounter_inv == 0)

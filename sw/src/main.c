@@ -108,6 +108,14 @@ static int nerve_pinch(void) {
 #endif
 }
 
+static int button_pressed(void){
+#ifdef CSR_BUTTON_BASE
+    return button_i_read() != 1;
+#else
+    return 0;
+#endif
+}
+
 /// If the updater exists and has a valid header, then jump
 /// to the updater.
 __attribute__((used))
@@ -221,12 +229,19 @@ static void init(void)
 #endif
     spiInit();
 
+#if defined(CONFIG_FOMU_REV)
     if (!nerve_pinch()) {
         lxspi_bitbang_en_write(0);
         maybe_boot_updater();
         maybe_boot_fbm();
         lxspi_bitbang_en_write(1);
     }
+#elif defined(CONFIG_ORANGECRAB_REV)
+    if(!button_pressed()){
+        spiFree();
+        warmboot_to_image(0);
+    }
+#endif
 
 #ifdef CSR_UART_BASE
     init_printf(NULL, rv_putchar);

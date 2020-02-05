@@ -29,6 +29,7 @@ def add_platform_args(parser):
 class Platform(LatticePlatform):
     def __init__(self, revision=None, toolchain="icestorm"):
         self.revision = revision
+        self.hw_platform = "fomu"
         if revision == "evt":
             from litex_boards.partner.platforms.fomu_evt import _io, _connectors
             LatticePlatform.__init__(self, "ice40-up5k-sg48", _io, _connectors, toolchain="icestorm")
