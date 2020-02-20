@@ -195,8 +195,8 @@ void reboot(void) {
     // Scan for configuration data.
     int i;
     int riscv_boot = 1;
-    char *destination_array = (char *)reboot_addr;
 #if defined(CONFIG_FOMU_REV)
+    uint32_t *destination_array = (uint32_t *)reboot_addr;
     for (i = 0; i < 32; i++) {
         // Look for FPGA sync pulse.
         if ((destination_array[i] == CONFIG_BITSTREAM_SYNC_HEADER1)
@@ -210,6 +210,7 @@ void reboot(void) {
         }
     }
 #elif defined(CONFIG_ORANGECRAB_REV)
+    char *destination_array = (char *)reboot_addr;
     // We want to support murtiple parts, 
     // so we just check the start of the bitstream header.
     const char magic[]="\xFF\x00Part: LFE5";
