@@ -33,6 +33,14 @@ class FirmwareROM(wishbone.SRAM):
             data = inp.read()
         wishbone.SRAM.__init__(self, size, read_only=True, init=data)
 
+class FirmwareROMHex(wishbone.SRAM):
+    def __init__(self, size, filename):
+        data = []
+        with open(filename, 'r') as inp:
+            for d in inp.readlines():
+                data += [int(d, 16)]
+        wishbone.SRAM.__init__(self, size, read_only=True, init=data)
+
 class JumpToAddressROM(wishbone.SRAM):
     def __init__(self, size, addr):
         data = [

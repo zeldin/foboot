@@ -25,6 +25,9 @@ from litex.build.generic_platform import *
 import argparse
 import os
 
+import struct
+
+from litex.soc.integration.common import get_mem_data
 
 
 def add_platform_args(parser):
@@ -45,14 +48,14 @@ class Platform(LatticePlatform):
         self.hw_platform = "orangecrab"
         if revision == "r0_1":
             from litex_boards.partner.platforms.OrangeCrab import _io, _connectors
-            LatticePlatform.__init__(self, "LFE5UM5G-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
+            LatticePlatform.__init__(self, "LFE5U-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
             self.spi_size = 1 * 1024 * 1024
             self.spi_dummy = 6
         elif revision == "r0_2":
             from litex_boards.partner.platforms.OrangeCrab_r2 import _io, _connectors
-            LatticePlatform.__init__(self, "LFE5UM5G-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
+            LatticePlatform.__init__(self, "LFE5U-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
             self.spi_size = 16 * 1024 * 1024
-            self.spi_dummy = 4
+            self.spi_dummy = 6
         else:
             raise ValueError("Unrecognized revision: {}.  Known values: evt, dvt, pvt, hacker".format(revision))
 
@@ -82,18 +85,85 @@ class Platform(LatticePlatform):
         #    platform.add_source(os.path.join(vdir, "sbled.v"))
 
     def add_button(self, soc):
-        soc.add_csr("button")
-        soc.submodules.button = Button(self.request("usr_btn"))
+        try:
+            btn = self.request("usr_btn")
+            soc.add_csr("button")
+            soc.submodules.button = Button(btn)
+        except:
+            ...
 
+    def build_templates(self, use_dsp, pnr_seed, placer):
+        # Override default LiteX's yosys/build templates
+        assert hasattr(self.toolchain, "yosys_template")
+        assert hasattr(self.toolchain, "build_template")
+        self.toolchain.yosys_template = [
+            "{read_files}",
+            "attrmap -tocase keep -imap keep=\"true\" keep=1 -imap keep=\"false\" keep=0 -remove keep=0",
+            "synth_ecp5 -abc9 {nwl} -json {build_name}.json -top {build_name}",
+        ]
+        self.toolchain.build_template = [
+            "yosys -q -l {build_name}.rpt {build_name}.ys",
+            "nextpnr-ecp5 --json {build_name}.json --lpf {build_name}.lpf --textcfg {build_name}.config  \
+            --{architecture} --package {package} {timefailarg}",
+            "ecppack {build_name}.config --svf {build_name}.svf --bit {build_name}.bit"
+        ]
+
+        # Add "-relut -dffe_min_ce_use 4" to the synth_ice40 command.
+        # The "-reult" adds an additional LUT pass to pack more stuff in,
+        # and the "-dffe_min_ce_use 4" flag prevents Yosys from generating a
+        # Clock Enable signal for a LUT that has fewer than 4 flip-flops.
+        # This increases density, and lets us use the FPGA more efficiently.
+        #if use_dsp:
+
+        # Allow us to set the nextpnr seed
+        self.toolchain.build_template[1] += " --seed " + str(pnr_seed)
+
+        self.toolchain.build_template[1] += " --speed 8"
+
+        if placer is not None:
+            self.toolchain.build_template[1] += " --placer {}".format(placer)
+            
     def finalise(self, output_dir):
-        # create a bitstream for loading into FLASH
+        # combine bitstream and rom
+
+
         input_config = os.path.join(output_dir, "gateware", "top.config")
+        input_rom_config = os.path.join(output_dir, "gateware", "top_rom.config")
+        input_rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
+        input_bios_bin = os.path.join(output_dir, "software","bios", "bios.bin")
+        input_bios_hex = os.path.join(output_dir, "software","bios", "bios.init")
+        #bios_data = get_mem_data(input_bios_bin)
+        with open(input_bios_bin, "rb") as f:
+            with open(input_bios_hex, "w") as o:
+                i = 0
+                while True:
+                    w = f.read(4)
+                    if not w:
+                        break
+                    if len(w) != 4:
+                        for _ in range(len(w), 4):
+                            w += b'\x00'
+                    #if endianness == "little":
+                    #    data[int(base, 16)//4 + i] = struct.unpack("<I", w)[0]
+                    #else:
+                    o.write(f'{struct.unpack("<I", w)[0]:08x}\n')
+                    #    data[int(base, 16)//4 + i] = struct.unpack(">I", w)[0]
+                    i += 1
+        
+        os.system(f"ecpbram  --input {input_config} --output {input_rom_config} --from {input_rom_rand} --to {input_bios_hex}")
+
+
+
+        # create a bitstream for loading into FLASH
+        #input_config = os.path.join(output_dir, "gateware", "top.config")
         output_bitstream = os.path.join(output_dir, "gateware", "foboot.bit")
-        os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x180000 --input {input_config} --bit {output_bitstream}")
+        os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x180000 --input {input_rom_config} --bit {output_bitstream}")
 
         # create a SVF for loading with JTAG adapter
         output_svf = os.path.join(output_dir, "gateware", "top.svf")
-        os.system(f"ecppack --input {input_config} --svf {output_svf}")
+        os.system(f"ecppack --input {input_rom_config} --svf {output_svf}")
+
+
 
 
         print(

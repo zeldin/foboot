@@ -85,6 +85,7 @@ static void riscv_reboot_to(const void *addr, uint32_t boot_config) {
 }
 
 
+#if defined(CONFIG_FOMU_REV)
 /// Tell whether the user is doing a "nerve pinch" to bypass
 /// one of the subsequent boot modes.
 static int nerve_pinch(void) {
@@ -107,6 +108,7 @@ static int nerve_pinch(void) {
     return 1;
 #endif
 }
+#endif
 
 static int button_pressed(void){
 #ifdef CSR_BUTTON_BASE
@@ -164,6 +166,7 @@ void maybe_boot_updater(void) {
     riscv_reboot_to((const void *)booster_base, 0x20);
 }
 
+#if defined(CONFIG_FOMU_REV)
 /// If Foboot_Main exists on SPI flash, and if the bypass isn't active,
 /// jump to FBM.
 static void maybe_boot_fbm(void) {
@@ -176,6 +179,8 @@ static void maybe_boot_fbm(void) {
             riscv_reboot_to(FBM_OFFSET, 0);
     }
 }
+
+#endif
 
 void reboot(void) {
     irq_setie(0);
@@ -190,7 +195,8 @@ void reboot(void) {
     // Scan for configuration data.
     int i;
     int riscv_boot = 1;
-    uint32_t *destination_array = (uint32_t *)reboot_addr;
+    char *destination_array = (char *)reboot_addr;
+#if defined(CONFIG_FOMU_REV)
     for (i = 0; i < 32; i++) {
         // Look for FPGA sync pulse.
         if ((destination_array[i] == CONFIG_BITSTREAM_SYNC_HEADER1)
@@ -203,6 +209,20 @@ void reboot(void) {
             boot_config = destination_array[i + 1];
         }
     }
+#elif defined(CONFIG_ORANGECRAB_REV)
+    // We want to support murtiple parts, 
+    // so we just check the start of the bitstream header.
+    const char magic[]="\xFF\x00Part: LFE5";
+	for (i = 0; i < (int)sizeof(magic) - 1; i++) {
+        if(destination_array[i] == magic[i]) {
+            riscv_boot = 0; // FLASH appears to be an ECP5 bitstream
+        }else {
+            riscv_boot = 1; // Assume it's RISCV code, and jump to it.
+            break;
+        }
+    }
+#endif
+
 
     if (riscv_boot) {
         riscv_reboot_to((void *)reboot_addr, boot_config);
@@ -211,7 +231,7 @@ void reboot(void) {
         // Issue a reboot
         warmboot_to_image(2);
     }
-    //__builtin_unreachable();
+    __builtin_unreachable();
 }
 
 static void init(void)
@@ -239,7 +259,7 @@ static void init(void)
 #elif defined(CONFIG_ORANGECRAB_REV)
     if(!button_pressed()){
         spiFree();
-        warmboot_to_image(0);
+        reboot();
     }
 #endif
 

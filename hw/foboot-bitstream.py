@@ -37,7 +37,7 @@ import argparse
 import os
 
 from rtl.version import Version
-from rtl.romgen import RandomFirmwareROM, FirmwareROM
+from rtl.romgen import RandomFirmwareROM, FirmwareROMHex
 from rtl.messible import Messible
         
 
@@ -106,7 +106,7 @@ class BaseSoC(SoCCore, AutoDoc):
         clk_freq = int(12e6)
         platform.add_crg(self)
 
-        SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=0, with_uart=False, **kwargs)
+        SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=0, with_uart=False, csr_data_width=32, **kwargs)
         
         usb_debug = False
         if debug is not None:
@@ -159,8 +159,8 @@ class BaseSoC(SoCCore, AutoDoc):
                 self.submodules.rom = wishbone.SRAM(bios_size, read_only=True, init=[])
                 self.register_rom(self.rom.bus, bios_size)
             else:
-                bios_size = 0x2000
-                self.submodules.firmware_rom = FirmwareROM(bios_size, bios_file)
+                bios_size = 0x4000
+                self.submodules.firmware_rom = FirmwareROMHex(bios_size, bios_file)
                 self.add_constant("ROM_DISABLE", 1)
                 self.register_rom(self.firmware_rom.bus, bios_size)
 
@@ -266,6 +266,9 @@ def main():
     parser.add_argument(
         "--export-random-rom-file", help="Generate a random ROM file and save it to a file"
     )
+    parser.add_argument(
+        "--skip-gateware", help="Skip generating gateware", default=False
+    )
     args, _ = parser.parse_known_args()
 
     # Select platform based arguments
@@ -285,13 +288,17 @@ def main():
         platform = Platform(revision=args.revision)
 
     output_dir = 'build'
-
-    if args.export_random_rom_file is not None:
-        export_random_rom_file(args.export_random_rom_file)
+    #if args.export_random_rom_file is not None:
+    rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
+    os.system(f"ecpbram  --generate {rom_rand} --seed {0} --width {32} --depth {int(0x4000/4)}")
 
     compile_software = False
     if (args.boot_source == "bios" or args.boot_source == "spi") and args.bios is None:
         compile_software = True
+
+    compile_gateware = True
+    if args.skip_gateware:
+        compile_gateware = False
 
     cpu_type = "vexriscv"
     cpu_variant = "lite"
@@ -302,10 +309,10 @@ def main():
         cpu_type = None
         cpu_variant = None
 
-    compile_gateware = True
     if args.document_only:
         compile_gateware = False
         compile_software = False
+
 
     os.environ["LITEX"] = "1" # Give our Makefile something to look for
 
