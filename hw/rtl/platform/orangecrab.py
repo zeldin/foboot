@@ -87,7 +87,6 @@ class Platform(LatticePlatform):
     def add_button(self, soc):
         try:
             btn = self.request("usr_btn")
-            soc.add_csr("button")
             soc.submodules.button = Button(btn)
         except:
             ...
@@ -125,14 +124,11 @@ class Platform(LatticePlatform):
             
     def finalise(self, output_dir):
         # combine bitstream and rom
-
-
         input_config = os.path.join(output_dir, "gateware", "top.config")
         input_rom_config = os.path.join(output_dir, "gateware", "top_rom.config")
         input_rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
         input_bios_bin = os.path.join(output_dir, "software","bios", "bios.bin")
         input_bios_hex = os.path.join(output_dir, "software","bios", "bios.init")
-        #bios_data = get_mem_data(input_bios_bin)
         with open(input_bios_bin, "rb") as f:
             with open(input_bios_hex, "w") as o:
                 i = 0
@@ -143,11 +139,7 @@ class Platform(LatticePlatform):
                     if len(w) != 4:
                         for _ in range(len(w), 4):
                             w += b'\x00'
-                    #if endianness == "little":
-                    #    data[int(base, 16)//4 + i] = struct.unpack("<I", w)[0]
-                    #else:
                     o.write(f'{struct.unpack("<I", w)[0]:08x}\n')
-                    #    data[int(base, 16)//4 + i] = struct.unpack(">I", w)[0]
                     i += 1
         
         os.system(f"ecpbram  --input {input_config} --output {input_rom_config} --from {input_rom_rand} --to {input_bios_hex}")
@@ -157,11 +149,15 @@ class Platform(LatticePlatform):
         # create a bitstream for loading into FLASH
         #input_config = os.path.join(output_dir, "gateware", "top.config")
         output_bitstream = os.path.join(output_dir, "gateware", "foboot.bit")
-        os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x180000 --input {input_rom_config} --bit {output_bitstream}")
+        os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x80000 --input {input_rom_config} --bit {output_bitstream}")
 
         # create a SVF for loading with JTAG adapter
         output_svf = os.path.join(output_dir, "gateware", "top.svf")
         os.system(f"ecppack --input {input_rom_config} --svf {output_svf}")
+
+        # create an SVF for loading into SPI FLASH with a simple JTAG adapter
+        output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
+        os.system(f"python3 util/ecp5_background_spi.py {output_bitstream} {output_svf}")
 
 
 
@@ -169,6 +165,7 @@ class Platform(LatticePlatform):
         print(
     f"""Foboot build complete.  Output files:
         {output_dir}/gateware/top.bit             Basic Bitstream file.  Load this onto the FPGA for testing.
+        {output_dir}/gateware/foboot_jtag_spi.svf Loads gateware into FLASH via JTAG
         {output_dir}/gateware/foboot.bit          Optimised Bitstream file. (QSPI, Compressed, Higher CLK)  Load this into FLASH.
         {output_dir}/gateware/top.svf             Serial Vector Format File. Useful when loading over JTAG.
         {output_dir}/gateware/top.v               Source Verilog file.  Useful for debugging issues.

@@ -73,6 +73,7 @@ class BaseSoC(SoCCore, AutoDoc):
         "version":        14,
         "lxspi":          15,
         "messible":       16,
+        "button":         17,
     }
     csr_map.update(SoCCore.csr_map)
 

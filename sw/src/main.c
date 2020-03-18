@@ -114,7 +114,7 @@ static int button_pressed(void){
 #ifdef CSR_BUTTON_BASE
     return button_i_read() != 1;
 #else
-    return 0;
+    return 1;
 #endif
 }
 
