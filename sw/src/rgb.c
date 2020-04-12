@@ -1,6 +1,9 @@
 #include <rgb.h>
 #include <generated/csr.h>
 
+
+#if defined(CONFIG_FOMU_REV)
+
 enum led_registers {
     LEDDCR0 = 8,
     LEDDBR = 9,
@@ -87,3 +90,47 @@ void rgb_mode_error(void) {
 void rgb_mode_done(void) {
     rgb_switch_mode(DONE, 8, 8, 2, 3, 0x14/4, 0x44/4, 0xff/4);
 }
+
+#elif defined(CONFIG_ORANGECRAB_REV)
+
+
+void rgb_init(void) {
+
+    rgb_mode_idle();
+}
+
+
+void rgb_mode_idle(void) {
+    rgb_div_m_write(60000);
+    rgb_config_write(2);
+}
+
+void rgb_mode_writing(void) {
+    rgb_div_m_write(32000);
+    rgb_config_write(1);
+
+    rgb__r_write(250);
+    rgb__g_write(250);
+    rgb__b_write(0);
+}
+
+void rgb_mode_error(void) {
+    rgb_div_m_write(15000);
+    rgb_config_write(1);
+
+    rgb__r_write(250);
+    rgb__g_write(0);
+    rgb__b_write(0);
+}
+
+void rgb_mode_done(void) {
+    rgb_div_m_write(50000);
+    rgb_config_write(1);
+
+    rgb__r_write(0);
+    rgb__g_write(250);
+    rgb__b_write(250);
+}
+
+
+#endif

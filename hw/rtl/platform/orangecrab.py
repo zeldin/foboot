@@ -14,7 +14,7 @@ import spibone
 from ..version import Version
 from ..romgen import RandomFirmwareROM, FirmwareROM
 from ..button import Button
-from ..pwmled import PWMLed
+from ..pwmled import RGB
 from ..ecpreboot import ECPReboot
 from ..messible import Messible
 
@@ -79,7 +79,7 @@ class Platform(LatticePlatform):
         soc.submodules.reboot = ECPReboot(soc)
     
     def add_rgb(self, soc):
-        soc.submodules.rgb = PWMLed(self.revision, self.request("rgb_led"))
+        soc.submodules.rgb = RGB(self.request("rgb_led"))
         #if platform.device[:4] == "LFE5":
         #    vdir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "rtl")
         #    platform.add_source(os.path.join(vdir, "sbled.v"))
