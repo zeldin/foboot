@@ -88,7 +88,7 @@ class Version(Module, AutoCSR, AutoDoc):
             elif model == "hacker":
                 model_val = 0x48 # 'H'
         elif hw_platform == "orangecrab":
-            parent.config["ORANGECRAB_REV"] = model.upper()
+            parent.config["ORANGECRAB_REV"] = model.upper().replace('.', '_')
             if model == "r0_1":
                 model_val = 0x10 # 'r0.1'
             elif model == "r0_2":

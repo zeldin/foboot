@@ -29,35 +29,28 @@ import struct
 
 from litex.soc.integration.common import get_mem_data
 
+from litex_boards.platforms.orangecrab import Platform as PlatformOC
+
 
 def add_platform_args(parser):
-    parser.add_argument(
-        "--revision", choices=["r0_1", "r0_2"], required=True,
-        help="build foboot for a particular hardware revision"
-    )
-    parser.add_argument(
-        "--device", choices=["25F", "45F", "85F"], default="25F",
-        help="Select device density"
-    )
+    parser.add_argument("--revision", default="0.2",
+                        help="Board Revision {0.1, 0.2} (default=0.2)")
+    parser.add_argument("--device", default="25F",
+                        help="ECP5 device (default=25F)")
 
 
-class Platform(LatticePlatform):
+class Platform(PlatformOC):
     def __init__(self, revision=None, device="25F", toolchain="trellis"):
-        self.revision = revision
+        assert revision in ["0.1", "0.2"]
+        
         self.device = device
         self.hw_platform = "orangecrab"
-        if revision == "r0_1":
-            from litex_boards.partner.platforms.OrangeCrab import _io, _connectors
-            LatticePlatform.__init__(self, "LFE5U-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
-            self.spi_size = 1 * 1024 * 1024
-            self.spi_dummy = 6
-        elif revision == "r0_2":
-            from litex_boards.partner.platforms.OrangeCrab_r2 import _io, _connectors
-            LatticePlatform.__init__(self, "LFE5U-" + device + "-8MG285C", _io, _connectors, toolchain=toolchain)
-            self.spi_size = 16 * 1024 * 1024
-            self.spi_dummy = 6
-        else:
-            raise ValueError("Unrecognized revision: {}.  Known values: evt, dvt, pvt, hacker".format(revision))
+
+        self.spi_size = {"0.1": int(1*1024*1024),    "0.2": int(16*1024*1024)}[revision]
+        self.spi_dummy = 6
+
+        PlatformOC.__init__(self, device=device, revision=revision, toolchain=toolchain)
+        self.revision = f'r{revision}'
 
 
     def create_programmer(self):

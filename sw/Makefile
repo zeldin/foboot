@@ -85,7 +85,7 @@ AOBJS      := $(addprefix $(OBJ_DIR)/, $(notdir $(ASOURCES:.S=.o)))
 OBJECTS    := $(COBJS) $(CXXOBJS) $(AOBJS)
 VPATH      := $(SRC_DIR) $(THIRD_PARTY) $(THIRD_PARTY)/libbase $(TINY_USB) $(TINY_USB)/class/msc $(TINY_USB)/class/cdc $(TINY_USB)/common $(TINY_USB)/device $(TINY_USB)/portable/valentyusb/eptri
 
-QUIET      := 
+QUIET      := @
 
 ALL        := all
 TARGET     := $(PACKAGE).elf

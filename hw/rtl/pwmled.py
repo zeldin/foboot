@@ -74,26 +74,10 @@ class RGB(Module, AutoCSR):
         strobe = Signal()
 
 
-        from PIL import Image
-        im = Image.open('util/colours.png')
-        x,_ = im.size
-        colours = []
-        for i in range(x):
-            p_r,p_g,p_b = im.getpixel((i,0))
-            colours += [(p_r << 16) | (p_g << 8) | (p_b)]
-
-        rainbow_index = Signal(x)
-        self.specials.mem = Memory(24, x, init=colours)
-        p = self.mem.get_port()
-        self.specials += p
-        self.sync += p.adr.eq(rainbow_index)
-        self.autocsr_exclude = ['mem']
-
 
         self.sync += [
             If(div_m_counter >= self._div_m.storage,
                 div_m_counter.eq(0),
-                rainbow_index.eq(rainbow_index + 1)
             ).Else(
                 div_m_counter.eq(div_m_counter + 1)
             )
@@ -118,13 +102,7 @@ class RGB(Module, AutoCSR):
         ]
 
         self.comb += [
-            If(self._config.fields.rainbow,
-                self.pdm_r.level.eq(p.dat_r[16:24]),
-                self.pdm_g.level.eq(p.dat_r[8:16]),
-                self.pdm_b.level.eq(p.dat_r[0:8])
-            ).Else(
-                self.pdm_r.level.eq(self._r.storage),
-                self.pdm_g.level.eq(self._g.storage),
-                self.pdm_b.level.eq(self._b.storage)
-            )
+            self.pdm_r.level.eq(self._r.storage),
+            self.pdm_g.level.eq(self._g.storage),
+            self.pdm_b.level.eq(self._b.storage)
         ]
