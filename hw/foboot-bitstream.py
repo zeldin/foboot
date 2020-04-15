@@ -156,11 +156,11 @@ class BaseSoC(SoCCore, AutoDoc):
         elif boot_source == "bios":
             kwargs['cpu_reset_address'] = 0
             if bios_file is None:
-                self.integrated_rom_size = bios_size = 0x4000
+                self.integrated_rom_size = bios_size = 0x8000
                 self.submodules.rom = wishbone.SRAM(bios_size, read_only=True, init=[])
                 self.register_rom(self.rom.bus, bios_size)
             else:
-                bios_size = 0x4000
+                bios_size = 0x8000
                 self.submodules.firmware_rom = FirmwareROMHex(bios_size, bios_file)
                 self.add_constant("ROM_DISABLE", 1)
                 self.register_rom(self.firmware_rom.bus, bios_size)
@@ -291,7 +291,7 @@ def main():
     output_dir = 'build'
     #if args.export_random_rom_file is not None:
     rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
-    os.system(f"ecpbram  --generate {rom_rand} --seed {0} --width {32} --depth {int(0x4000/4)}")
+    os.system(f"ecpbram  --generate {rom_rand} --seed {0} --width {32} --depth {int(0x8000/4)}")
 
     compile_software = False
     if (args.boot_source == "bios" or args.boot_source == "spi") and args.bios is None:

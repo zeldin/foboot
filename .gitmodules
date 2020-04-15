@@ -22,3 +22,6 @@
 [submodule "hw/deps/spibone"]
 	path = hw/deps/spibone
 	url = https://github.com/xobs/spibone.git
+[submodule "sw/third_party/tinyusb"]
+	path = sw/third_party/tinyusb
+	url = https://github.com/hathach/tinyusb.git

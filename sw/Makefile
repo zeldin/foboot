@@ -10,6 +10,7 @@ endif
 CC         := $(TRGT)gcc
 CXX        := $(TRGT)g++
 OBJCOPY    := $(TRGT)objcopy
+OBJDUMP    := $(TRGT)objdump
 
 RM         := rm -rf
 COPY       := cp -a
@@ -25,7 +26,7 @@ ifeq ($(LITEX),1)
 BASE_DIR   := ../../../../sw
 LDSCRIPT   := $(BASE_DIR)/ld/linker.ld
 LD_DIR     := ../include/generated
-ADD_CFLAGS := -I../include -I$(BASE_DIR)/include
+ADD_CFLAGS := -I../include -I$(BASE_DIR)/include 
 ADD_LFLAGS := 
 PACKAGE    := bios
 else
@@ -43,34 +44,48 @@ THIRD_PARTY := $(BASE_DIR)/third_party
 DBG_CFLAGS := -ggdb3 -DDEBUG -Wall
 DBG_LFLAGS := -ggdb3 -Wall
 CFLAGS     := $(ADD_CFLAGS) \
-			  -D__vexriscv__ -march=rv32i  -mabi=ilp32 \
+			  -D__vexriscv__ -march=rv32im  -mabi=ilp32 \
 			  -Wall -Wextra \
 			  -flto \
 			  -ffunction-sections -fdata-sections -fno-common \
 			  -fomit-frame-pointer -Os \
-			  -march=rv32i \
 			  -DGIT_VERSION=u\"$(GIT_VERSION)\" -std=gnu11
 CXXFLAGS   := $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions
 LFLAGS     := $(CFLAGS) $(ADD_LFLAGS) -L$(LD_DIR) \
+		      -flto -ffreestanding \
 			  -nostartfiles \
-			  -nostdlib \
+			  -specs=nano.specs \
 			  -Wl,--gc-sections \
 			  -Wl,--no-warn-mismatch \
 			  -Wl,--script=$(LDSCRIPT) \
 			  -Wl,--build-id=none
 
+# TinyUSB additions
+TINY_USB   := $(THIRD_PARTY)/tinyusb/src
+CFLAGS     += -I$(TINY_USB) -I$(TINY_USB)/common -I$(TINY_USB)/device -I$(TINY_USB)/portable/valentyusb -I../include/generated
+CFLAGS     += -DCFG_TUSB_MCU=OPT_MCU_VALENTYUSB_EPTRI
+
+CSOURCES := $(TINY_USB)/class/msc/msc_device.c \
+			$(TINY_USB)/class/cdc/cdc_device.c \
+			$(TINY_USB)/common/tusb_fifo.c \
+			$(TINY_USB)/device/usbd_control.c \
+			$(TINY_USB)/device/usbd.c \
+			$(TINY_USB)/portable/valentyusb/eptri/dcd_eptri.c \
+			$(TINY_USB)/tusb.c
+			
+
 OBJ_DIR    := .obj
 
-CSOURCES   := $(wildcard $(SRC_DIR)/*.c) $(wildcard $(THIRD_PARTY)/libbase/*.c) $(wildcard $(THIRD_PARTY)/*.c)
+CSOURCES   += $(wildcard $(SRC_DIR)/*.c) $(wildcard $(THIRD_PARTY)/libbase/*.c) $(wildcard $(THIRD_PARTY)/*.c) 
 CPPSOURCES := $(wildcard $(SRC_DIR)/*.cpp) $(wildcard $(THIRD_PARTY)/libbase/*.cpp) $(wildcard $(THIRD_PARTY)/*.cpp)
 ASOURCES   := $(wildcard $(SRC_DIR)/*.S) $(wildcard $(THIRD_PARTY)/libbase/*.S) $(wildcard $(THIRD_PARTY)/*.S)
 COBJS      := $(addprefix $(OBJ_DIR)/, $(notdir $(CSOURCES:.c=.o)))
 CXXOBJS    := $(addprefix $(OBJ_DIR)/, $(notdir $(CPPSOURCES:.cpp=.o)))
 AOBJS      := $(addprefix $(OBJ_DIR)/, $(notdir $(ASOURCES:.S=.o)))
 OBJECTS    := $(COBJS) $(CXXOBJS) $(AOBJS)
-VPATH      := $(SRC_DIR) $(THIRD_PARTY) $(THIRD_PARTY)/libbase
+VPATH      := $(SRC_DIR) $(THIRD_PARTY) $(THIRD_PARTY)/libbase $(TINY_USB) $(TINY_USB)/class/msc $(TINY_USB)/class/cdc $(TINY_USB)/common $(TINY_USB)/device $(TINY_USB)/portable/valentyusb/eptri
 
-QUIET      := @
+QUIET      := 
 
 ALL        := all
 TARGET     := $(PACKAGE).elf
@@ -87,6 +102,10 @@ $(TARGET): $(OBJECTS) $(LDSCRIPTS)
 $(PACKAGE).bin: $(TARGET)
 	$(QUIET) echo "  OBJCOPY  $@"
 	$(QUIET) $(OBJCOPY) -O binary $(TARGET) $@
+	
+$(PACKAGE).lst: $(TARGET)
+	$(QUIET) echo "  OBJDUMP  $@"
+	$(QUIET) $(OBJDUMP) -DS $(TARGET) > $@
 
 $(PACKAGE).dfu: $(TARGET)
 	$(QUIET) echo "  DFU      $@"
@@ -97,11 +116,11 @@ $(PACKAGE).ihex: $(TARGET)
 	$(QUIET) echo "  IHEX     $(PACKAGE).ihex"
 	$(QUIET) $(OBJCOPY) -O ihex $(TARGET) $@
 
-$(DEBUG): CFLAGS += $(DBG_CFLAGS)
-$(DEBUG): LFLAGS += $(DBG_LFLAGS)
-CFLAGS += $(DBG_CFLAGS)
-LFLAGS += $(DBG_LFLAGS)
-$(DEBUG): $(TARGET)
+#$(DEBUG): CFLAGS += $(DBG_CFLAGS)
+#$(DEBUG): LFLAGS += $(DBG_LFLAGS)
+#CFLAGS += $(DBG_CFLAGS)
+#LFLAGS += $(DBG_LFLAGS)
+#$(DEBUG): $(TARGET)
 
 $(OBJ_DIR):
 	$(QUIET) mkdir $(OBJ_DIR)
