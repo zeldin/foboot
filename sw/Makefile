@@ -49,7 +49,7 @@ CFLAGS     := $(ADD_CFLAGS) \
 			  -flto \
 			  -ffunction-sections -fdata-sections -fno-common \
 			  -fomit-frame-pointer -Os \
-			  -DGIT_VERSION=u\"$(GIT_VERSION)\" -std=gnu11
+			  -DGIT_VERSION=u\"$(GIT_VERSION)\" -DUF2_VERSION_BASE=\"$(GIT_VERSION)\" -std=gnu11
 CXXFLAGS   := $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions
 LFLAGS     := $(CFLAGS) $(ADD_LFLAGS) -L$(LD_DIR) \
 		      -flto -ffreestanding \
@@ -67,12 +67,25 @@ CFLAGS     += -DCFG_TUSB_MCU=OPT_MCU_VALENTYUSB_EPTRI
 
 CSOURCES := $(TINY_USB)/class/msc/msc_device.c \
 			$(TINY_USB)/class/cdc/cdc_device.c \
+			$(TINY_USB)/class/hid/hid_device.c \
 			$(TINY_USB)/common/tusb_fifo.c \
 			$(TINY_USB)/device/usbd_control.c \
 			$(TINY_USB)/device/usbd.c \
 			$(TINY_USB)/portable/valentyusb/eptri/dcd_eptri.c \
 			$(TINY_USB)/tusb.c
-			
+
+## TinyUF2
+
+CFLAGS   += -DBOARD_FLASH_SIZE=0x80000 \
+			-DBOARD_FLASH_BASE=0x20080000 \
+			-DAPP_START_ADDRESS=0x20080000 \
+            -DPRODUCT_NAME=\"OrangeCrab\ r0.2\" \
+            -DINDEX_URL=\"https://github.com/gregdavill/OrangeCrab\" \
+			-DVOLUME_LABEL=\"UF2\" \
+			-DBOARD_ID=\"0x100\" \
+			-DVENDOR_NAME=\"GsD\" \
+			-DUF2_FAMILY=0xAA
+            
 
 OBJ_DIR    := .obj
 
@@ -83,9 +96,9 @@ COBJS      := $(addprefix $(OBJ_DIR)/, $(notdir $(CSOURCES:.c=.o)))
 CXXOBJS    := $(addprefix $(OBJ_DIR)/, $(notdir $(CPPSOURCES:.cpp=.o)))
 AOBJS      := $(addprefix $(OBJ_DIR)/, $(notdir $(ASOURCES:.S=.o)))
 OBJECTS    := $(COBJS) $(CXXOBJS) $(AOBJS)
-VPATH      := $(SRC_DIR) $(THIRD_PARTY) $(THIRD_PARTY)/libbase $(TINY_USB) $(TINY_USB)/class/msc $(TINY_USB)/class/cdc $(TINY_USB)/common $(TINY_USB)/device $(TINY_USB)/portable/valentyusb/eptri
+VPATH      := $(SRC_DIR) $(THIRD_PARTY) $(THIRD_PARTY)/libbase $(TINY_USB) $(TINY_USB)/class/msc $(TINY_USB)/class/cdc $(TINY_USB)/class/hid $(TINY_USB)/common $(TINY_USB)/device $(TINY_USB)/portable/valentyusb/eptri
 
-QUIET      := @
+QUIET      := 
 
 ALL        := all
 TARGET     := $(PACKAGE).elf
