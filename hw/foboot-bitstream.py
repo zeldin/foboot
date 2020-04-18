@@ -107,7 +107,7 @@ class BaseSoC(SoCCore, AutoDoc):
         clk_freq = int(12e6)
         platform.add_crg(self)
 
-        SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=0, with_uart=False, csr_data_width=32, **kwargs)
+        SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=0, with_uart=True, csr_data_width=32, **kwargs)
         
         usb_debug = False
         if debug is not None:
@@ -268,7 +268,7 @@ def main():
         "--export-random-rom-file", help="Generate a random ROM file and save it to a file"
     )
     parser.add_argument(
-        "--skip-gateware", help="Skip generating gateware", default=False
+        "--skip-gateware", help="Skip generating gateware", action="store_true"
     )
     args, _ = parser.parse_known_args()
 
@@ -293,7 +293,7 @@ def main():
     rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
     os.system(f"ecpbram  --generate {rom_rand} --seed {0} --width {32} --depth {int(0x8000/4)}")
 
-    compile_software = False
+    compile_software = True
     if (args.boot_source == "bios" or args.boot_source == "spi") and args.bios is None:
         compile_software = True
 

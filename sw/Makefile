@@ -46,13 +46,12 @@ DBG_LFLAGS := -ggdb3 -Wall
 CFLAGS     := $(ADD_CFLAGS) \
 			  -D__vexriscv__ -march=rv32im  -mabi=ilp32 \
 			  -Wall -Wextra \
-			  -flto \
 			  -ffunction-sections -fdata-sections -fno-common \
 			  -fomit-frame-pointer -Os \
 			  -DGIT_VERSION=u\"$(GIT_VERSION)\" -DUF2_VERSION_BASE=\"$(GIT_VERSION)\" -std=gnu11
 CXXFLAGS   := $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions
 LFLAGS     := $(CFLAGS) $(ADD_LFLAGS) -L$(LD_DIR) \
-		      -flto -ffreestanding \
+		      -ffreestanding \
 			  -nostartfiles \
 			  -specs=nano.specs \
 			  -Wl,--gc-sections \

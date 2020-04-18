@@ -29,7 +29,7 @@ import struct
 
 from litex.soc.integration.common import get_mem_data
 
-from litex_boards.platforms.orangecrab import Platform as PlatformOC
+from litex_boards.platforms.orangecrab import Platform as PlatformOC, feather_serial
 
 
 def add_platform_args(parser):
@@ -51,6 +51,8 @@ class Platform(PlatformOC):
 
         PlatformOC.__init__(self, device=device, revision=revision, toolchain=toolchain)
         self.revision = f'r{revision}'
+
+        self.add_extension(feather_serial)
 
 
     def create_programmer(self):
@@ -149,8 +151,8 @@ class Platform(PlatformOC):
         os.system(f"ecppack --input {input_rom_config} --svf {output_svf}")
 
         # create an SVF for loading into SPI FLASH with a simple JTAG adapter
-        output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
-        os.system(f"python3 util/ecp5_background_spi.py {output_bitstream} {output_svf}")
+        #output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
+        #os.system(f"python3 util/ecp5_background_spi.py {output_bitstream} {output_svf}")
 
 
 

@@ -27,7 +27,7 @@
 
 #if CFG_TUD_CDC
 
-int write(int fhdl, const char *buf, size_t count)
+int _write(int fhdl, const char *buf, size_t count)
 {
     if (!tud_cdc_connected())
         return 0;
@@ -40,7 +40,7 @@ int write(int fhdl, const char *buf, size_t count)
     return count;
 }
 
-int read(int fhdl, char *buf, size_t count)
+int _read(int fhdl, char *buf, size_t count)
 {
     if (!tud_cdc_connected() || !tud_cdc_available())
         return 0;

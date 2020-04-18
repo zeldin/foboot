@@ -30,6 +30,10 @@
  */
 
 #include <string.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <stdarg.h>
+
 
 size_t
 strlen(const char *str)
