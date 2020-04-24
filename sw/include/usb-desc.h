@@ -76,7 +76,7 @@ struct usb_string_descriptor_struct {
 #endif
 #elif defined(CONFIG_ORANGECRAB_REV)
 #define VENDOR_ID                 0x1209    // pid.codes
-#define PRODUCT_ID                0x5bf0    // Assigned to Fomu project TODO: Change This
+#define PRODUCT_ID                0x5af0    // Assigned to OrangeCrab DFU
 #define DEVICE_VER                0x0101    // Bootloader version
 #define MANUFACTURER_NAME         u"GsD"
 #define MANUFACTURER_NAME_LEN     sizeof(MANUFACTURER_NAME)
