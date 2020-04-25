@@ -75,7 +75,7 @@ CSOURCES := $(TINY_USB)/class/msc/msc_device.c \
 
 ## TinyUF2
 
-CFLAGS   += -DBOARD_FLASH_SIZE=0x80000 \
+CFLAGS   += -DBOARD_FLASH_SIZE=0x100000 \
 			-DBOARD_FLASH_BASE=0x20080000 \
 			-DAPP_START_ADDRESS=0x20080000 \
             -DPRODUCT_NAME=\"OrangeCrab\ r0.2\" \
@@ -83,7 +83,7 @@ CFLAGS   += -DBOARD_FLASH_SIZE=0x80000 \
 			-DVOLUME_LABEL=\"UF2\" \
 			-DBOARD_ID=\"0x100\" \
 			-DVENDOR_NAME=\"GsD\" \
-			-DUF2_FAMILY=0xAA
+			-DUF2_FAMILY=0x283c0358
             
 
 OBJ_DIR    := .obj
