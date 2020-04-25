@@ -30,7 +30,7 @@ from valentyusb.usbcore import io as usbio
 from valentyusb.usbcore.cpu import epmem, unififo, epfifo, dummyusb, eptri
 from valentyusb.usbcore.endpoint import EndpointType
 
-import lxsocdoc
+import litex.soc.doc as lxsocdoc
 import spibone
 
 import argparse
@@ -77,12 +77,13 @@ class BaseSoC(SoCCore, AutoDoc):
     }
     csr_map.update(SoCCore.csr_map)
 
-    mem_map = {
-        "rom":      0x00000000,  # (default shadow @0x80000000)
-        "sram":     0x10000000,  # (default shadow @0xa0000000)
-        "spiflash": 0x20000000,  # (default shadow @0xa0000000)
-        "main_ram": 0x40000000,  # (default shadow @0xc0000000)
-        "csr":      0xe0000000,  # (default shadow @0xe0000000)
+    SoCCore.mem_map = {
+        "rom":              0x00000000,  # (default shadow @0x80000000)
+        "sram":             0x10000000,  # (default shadow @0xa0000000)
+        "spiflash":         0x20000000,  # (default shadow @0xa0000000)
+        "main_ram":         0x40000000,  # (default shadow @0xc0000000)
+        "csr":              0xe0000000,  # (default shadow @0xe0000000)
+        "vexriscv_debug":   0xf00f0000,
     }
     mem_map.update(SoCCore.mem_map)
 
@@ -302,7 +303,7 @@ def main():
         compile_gateware = False
 
     cpu_type = "vexriscv"
-    cpu_variant = "lite"
+    cpu_variant = "minimal"
     if args.with_debug:
         cpu_variant = cpu_variant + "+debug"
 
@@ -325,7 +326,7 @@ def main():
                             use_dsp=args.with_dsp, placer=args.placer,
                             pnr_seed=int(args.seed),
                             output_dir=output_dir)
-    builder = Builder(soc, output_dir=output_dir, csr_csv="build/csr.csv",
+    builder = Builder(soc, output_dir=output_dir, csr_csv="build/csr.csv", csr_svd="build/soc.svd",
                       compile_software=compile_software, compile_gateware=compile_gateware)
     if compile_software:
         builder.software_packages = [
@@ -334,7 +335,6 @@ def main():
     vns = builder.build()
     soc.do_exit(vns)
     lxsocdoc.generate_docs(soc, "build/documentation/", project_name="Fomu Bootloader", author="Sean Cross")
-    lxsocdoc.generate_svd(soc, "build/software", vendor="Foosn", name="Fomu")
 
     if not args.document_only:
         platform.finalise(output_dir)
