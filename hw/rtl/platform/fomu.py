@@ -6,7 +6,7 @@ from litex.soc.cores import up5kspram, spi_flash
 
 from litex_boards.partner.targets.fomu import _CRG
 
-import lxsocdoc
+import litex.soc.doc as lxsocdoc
 import spibone
 
 from ..romgen import RandomFirmwareROM, FirmwareROM

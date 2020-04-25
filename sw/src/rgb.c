@@ -91,7 +91,7 @@ void rgb_mode_done(void) {
     rgb_switch_mode(DONE, 8, 8, 2, 3, 0x14/4, 0x44/4, 0xff/4);
 }
 
-#elif defined(CONFIG_ORANGECRAB_REV)
+#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2)
 
 
 void rgb_init(void) {

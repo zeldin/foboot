@@ -74,7 +74,7 @@ struct usb_string_descriptor_struct {
 #else
 #define PRODUCT_NAME              u"Fomu DFU Bootloader " GIT_VERSION
 #endif
-#elif defined(CONFIG_ORANGECRAB_REV)
+#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2)
 #define VENDOR_ID                 0x1209    // pid.codes
 #define PRODUCT_ID                0x5af0    // Assigned to OrangeCrab DFU
 #define DEVICE_VER                0x0101    // Bootloader version

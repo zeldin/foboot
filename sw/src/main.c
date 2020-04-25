@@ -209,7 +209,7 @@ void reboot(void) {
             boot_config = destination_array[i + 1];
         }
     }
-#elif defined(CONFIG_ORANGECRAB_REV)
+#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2)
     char *destination_array = (char *)reboot_addr;
     // We want to support murtiple parts, 
     // so we just check the start of the bitstream header.
@@ -257,7 +257,7 @@ static void init(void)
         maybe_boot_fbm();
         lxspi_bitbang_en_write(1);
     }
-#elif defined(CONFIG_ORANGECRAB_REV)
+#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2)
     if(!button_pressed()){
         spiFree();
         reboot();

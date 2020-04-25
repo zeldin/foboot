@@ -1,7 +1,6 @@
 from migen import Module, Signal, If, Instance
 from litex.soc.integration.doc import ModuleDoc
 from litex.soc.interconnect.csr import AutoCSR, CSRStatus, CSRStorage, CSRField
-import lxsocdoc
 
 class ECPReboot(Module, AutoCSR):
     def __init__(self, parent):

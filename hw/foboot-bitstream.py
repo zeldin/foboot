@@ -75,7 +75,6 @@ class BaseSoC(SoCCore, AutoDoc):
         "messible":       16,
         "button":         17,
     }
-    csr_map.update(SoCCore.csr_map)
 
     SoCCore.mem_map = {
         "rom":              0x00000000,  # (default shadow @0x80000000)
@@ -85,7 +84,6 @@ class BaseSoC(SoCCore, AutoDoc):
         "csr":              0xe0000000,  # (default shadow @0xe0000000)
         "vexriscv_debug":   0xf00f0000,
     }
-    mem_map.update(SoCCore.mem_map)
 
     interrupt_map = {
         "timer0": 2,
