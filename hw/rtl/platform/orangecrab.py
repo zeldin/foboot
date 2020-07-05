@@ -147,12 +147,12 @@ class Platform(LatticePlatform):
         os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x80000 --input {input_rom_config} --bit {output_bitstream}")
 
         # create a SVF for loading with JTAG adapter
-        output_svf = os.path.join(output_dir, "gateware", "top.svf")
-        os.system(f"ecppack --input {input_rom_config} --svf {output_svf}")
+        #output_svf = os.path.join(output_dir, "gateware", "top.svf")
+        #os.system(f"ecppack --input {input_rom_config} --svf {output_svf}")
 
         # create an SVF for loading into SPI FLASH with a simple JTAG adapter
-        output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
-        os.system(f"python3 util/ecp5_background_spi.py {output_bitstream} {output_svf}")
+        #output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
+        #os.system(f"python3 util/ecp5_background_spi.py {output_bitstream} {output_svf}")
 
 
 
