@@ -194,7 +194,7 @@ void reboot(void) {
 
     // Scan for configuration data.
     int i;
-    int riscv_boot = 1;
+    int riscv_boot = 0;
 #if defined(CONFIG_FOMU_REV)
     uint32_t *destination_array = (uint32_t *)reboot_addr;
     for (i = 0; i < 32; i++) {
@@ -213,24 +213,23 @@ void reboot(void) {
     char *destination_array = (char *)reboot_addr;
     // We want to support murtiple parts, 
     // so we just check the start of the bitstream header.
-    const char magic[]="\xFF\x00Part: LFE5";
-	for (i = 0; i < (int)sizeof(magic) - 1; i++) {
-        if(destination_array[i] == magic[i]) {
-            riscv_boot = 0; // FLASH appears to be an ECP5 bitstream
-        }else {
-            riscv_boot = 1; // Assume it's RISCV code, and jump to it.
-            break;
-        }
+    const char magic[]="\xFF\x00";
+    if((destination_array[0] == magic[0]) && (destination_array[1] == magic[1])) {
+        riscv_boot = 0; // FLASH appears to be an ECP5 bitstream
+    }else {
+        riscv_boot = 1; // Assume it's RISCV code, and jump to it.
     }
 #endif
-
 
     if (riscv_boot) {
         riscv_reboot_to((void *)reboot_addr, boot_config);
     }
     else {
         // Issue a reboot
-        warmboot_to_image(2);
+        while(1){
+            // For some reason writing to this register can fail if followed by an empty while loop
+            reboot_ctrl_write(0xac); 
+        }
     }
     __builtin_unreachable();
 }
