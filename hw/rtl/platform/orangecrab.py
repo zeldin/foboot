@@ -119,8 +119,8 @@ class Platform(LatticePlatform):
             
     def finalise(self, output_dir):
         # combine bitstream and rom
-        input_config = os.path.join(output_dir, "gateware", "top.config")
-        input_rom_config = os.path.join(output_dir, "gateware", "top_rom.config")
+        input_config = os.path.join(output_dir, "gateware", f"{self.name}.config")
+        input_rom_config = os.path.join(output_dir, "gateware", f"{self.name}_rom.config")
         input_rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
         input_bios_bin = os.path.join(output_dir, "software","bios", "bios.bin")
         input_bios_hex = os.path.join(output_dir, "software","bios", "bios.init")
@@ -144,7 +144,10 @@ class Platform(LatticePlatform):
         # create a bitstream for loading into FLASH
         #input_config = os.path.join(output_dir, "gateware", "top.config")
         output_bitstream = os.path.join(output_dir, "gateware", "foboot.bit")
-        os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x80000 --input {input_rom_config} --bit {output_bitstream}")
+
+        # Don't enable QSPI mode on r0.1 (By default the SPI chips don't have QE set)
+        spi_mode = '' if self.revision == 'r0.1' else '--spimode qspi'
+        os.system(f"ecppack {spi_mode} --freq 38.8 --compress --bootaddr 0x80000 --input {input_rom_config} --bit {output_bitstream}")
 
         # create a SVF for loading with JTAG adapter
         #output_svf = os.path.join(output_dir, "gateware", "top.svf")

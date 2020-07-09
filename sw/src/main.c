@@ -9,7 +9,12 @@
 #include <generated/csr.h>
 #include <generated/mem.h>
 
-struct ff_spi *spi;
+// reboot function
+__attribute__((noreturn)) static inline void warmboot_to_image(uint8_t image_index) {
+	reboot_ctrl_write(0xac | (image_index & 3) << 0);
+	while (1);
+}
+
 
 // ICE40UP5K bitstream images (with SB_MULTIBOOT header) are
 // 104250 bytes.  The SPI flash has 4096-byte erase blocks.
@@ -248,6 +253,11 @@ static void init(void)
     picorvspi_cfg4_write(0x80);
 #endif
     spiInit();
+
+#if defined(CONFIG_ORANGECRAB_REV_R0_1)
+    // Check for QE bit set. If not set, enable it.
+    spiSetQE();
+#endif
 
 #if defined(CONFIG_FOMU_REV)
     if (!nerve_pinch()) {
