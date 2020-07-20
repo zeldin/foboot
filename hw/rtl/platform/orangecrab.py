@@ -7,10 +7,6 @@ from litex.soc.cores import up5kspram, spi_flash
 from litex.soc.cores.clock import ECP5PLL
 from migen.genlib.resetsync import AsyncResetSynchronizer
 
-
-import lxsocdoc
-import spibone
-
 from ..version import Version
 from ..romgen import RandomFirmwareROM, FirmwareROM
 from ..button import Button
@@ -99,7 +95,7 @@ class Platform(PlatformOC):
             "yosys -q -l {build_name}.rpt {build_name}.ys",
             "nextpnr-ecp5 --json {build_name}.json --lpf {build_name}.lpf --textcfg {build_name}.config  \
             --{architecture} --package {package} {timefailarg}",
-            "ecppack {build_name}.config --svf {build_name}.svf --bit {build_name}.bit"
+            "ecppack {build_name}.config --spimode qspi --freq 38.8 --compress --bootaddr 0x80000 --bit {build_name}.bit"
         ]
 
         # Add "-relut -dffe_min_ce_use 4" to the synth_ice40 command.
@@ -139,20 +135,6 @@ class Platform(PlatformOC):
         
         os.system(f"ecpbram  --input {input_config} --output {input_rom_config} --from {input_rom_rand} --to {input_bios_hex}")
 
-
-
-        # create a bitstream for loading into FLASH
-        #input_config = os.path.join(output_dir, "gateware", "top.config")
-        output_bitstream = os.path.join(output_dir, "gateware", "foboot.bit")
-        os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x80000 --input {input_rom_config} --bit {output_bitstream}")
-
-        # create a SVF for loading with JTAG adapter
-        output_svf = os.path.join(output_dir, "gateware", "top.svf")
-        os.system(f"ecppack --input {input_rom_config} --svf {output_svf}")
-
-        # create an SVF for loading into SPI FLASH with a simple JTAG adapter
-        #output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
-        #os.system(f"python3 util/ecp5_background_spi.py {output_bitstream} {output_svf}")
 
 
 

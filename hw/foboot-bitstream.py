@@ -30,8 +30,7 @@ from valentyusb.usbcore import io as usbio
 from valentyusb.usbcore.cpu import epmem, unififo, epfifo, dummyusb, eptri
 from valentyusb.usbcore.endpoint import EndpointType
 
-import lxsocdoc
-import spibone
+from litex.soc.doc import generate_docs, generate_svd
 
 import argparse
 import os
@@ -333,8 +332,8 @@ def main():
         ]
     vns = builder.build()
     soc.do_exit(vns)
-    lxsocdoc.generate_docs(soc, "build/documentation/", project_name="Fomu Bootloader", author="Sean Cross")
-    lxsocdoc.generate_svd(soc, "build/software", vendor="Foosn", name="Fomu")
+    generate_docs(soc, "build/documentation/", project_name="Fomu Bootloader", author="Sean Cross")
+    generate_svd(soc, "build/software", vendor="Foosn", name="Fomu")
 
     if not args.document_only:
         platform.finalise(output_dir)
