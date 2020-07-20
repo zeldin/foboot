@@ -27,6 +27,7 @@
 #include <dfu.h>
 #include <rgb.h>
 #include <generated/mem.h>
+#include <generated/soc.h>
 #include <generated/csr.h>
 
 #ifndef CONFIG_RESCUE_IMAGE_OFFSET
@@ -37,7 +38,10 @@
 #define ERASE_SIZE 4096 // Erase block size (in bytes)
 #define WRITE_SIZE 256 // Number of bytes we can write
 
-#define FLASH_MAX_ADDR ((1024 * 1024) + (1024 * 512)) // 1.5 MB max
+// FLASH_MAX_ADDR should be set as part of the LiteX platform
+#ifndef FLASH_MAX_ADDR
+#error FLASH_MAX_ADDR NOT DEFINED
+#endif
 
 #include <spi.h>
 

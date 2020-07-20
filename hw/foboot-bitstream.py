@@ -205,6 +205,9 @@ class BaseSoC(SoCCore, AutoDoc):
         if hasattr(platform, "add_button"):
             platform.add_button(self)
 
+        bootloader_size = 512*1024
+        self.add_constant("FLASH_MAX_ADDR", value=platform.spi_size - bootloader_size)
+
         # Allow the user to reboot the ICE40.  Additionally, connect the CPU
         # RESET line to a register that can be modified, to allow for
         # us to debug programs even during reset.
