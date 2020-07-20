@@ -15,6 +15,14 @@ static uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
 uint32_t reset_millis = 0;
 
 
+__attribute__((noreturn)) void reboot(void);
+
+__attribute__((noreturn)) static inline void warmboot_to_image(uint8_t image_index) {
+	reboot_ctrl_write(0xac | (image_index & 3) << 0);
+	while (1);
+}
+
+
 volatile uint32_t system_ticks = 0;
 static void timer_init(void)
 {
