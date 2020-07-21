@@ -106,7 +106,7 @@ class BaseSoC(SoCCore, AutoDoc):
         clk_freq = int(12e6)
         platform.add_crg(self)
 
-        SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=0, with_uart=True, csr_data_width=32, **kwargs)
+        SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=0, integrated_rom_size=0x200, with_uart=False, csr_data_width=32, **kwargs)
         
         usb_debug = False
         if debug is not None:
@@ -145,35 +145,7 @@ class BaseSoC(SoCCore, AutoDoc):
 
         # Add a Messible for device->host communications
         self.submodules.messible = Messible()
-
-        if boot_source == "rand":
-            kwargs['cpu_reset_address'] = 0
-            bios_size = 0x2000
-            self.submodules.random_rom = RandomFirmwareROM(bios_size)
-            self.add_constant("ROM_DISABLE", 1)
-            self.register_rom(self.random_rom.bus, bios_size)
-        elif boot_source == "bios":
-            kwargs['cpu_reset_address'] = 0
-            if bios_file is None:
-                self.integrated_rom_size = bios_size = 0x8000
-                self.submodules.rom = wishbone.SRAM(bios_size, read_only=True, init=[])
-                self.register_rom(self.rom.bus, bios_size)
-            else:
-                bios_size = 0x8000
-                self.submodules.firmware_rom = FirmwareROMHex(bios_size, bios_file)
-                self.add_constant("ROM_DISABLE", 1)
-                self.register_rom(self.firmware_rom.bus, bios_size)
-
-        elif boot_source == "spi":
-            kwargs['cpu_reset_address'] = 0
-            self.integrated_rom_size = bios_size = 0x2000
-            gateware_size = 0x1a000
-            self.flash_boot_address = self.mem_map["spiflash"] + gateware_size
-            self.submodules.rom = wishbone.SRAM(bios_size, read_only=True, init=[])
-            self.register_rom(self.rom.bus, bios_size)
-        else:
-            raise ValueError("unrecognized boot_source: {}".format(boot_source))
-
+       
         # The litex SPI module supports memory-mapped reads, as well as a bit-banged mode
         # for doing writes.
         spi_pads = platform.request("spiflash4x")
@@ -242,7 +214,7 @@ def main():
         help="Don't build gateware or software, only build documentation"
     )
     parser.add_argument(
-        "--platform", choices=["fomu", "orangecrab"], required=True,
+        "--platform", choices=["fomu", "orangecrab", "icebreaker-bitsy"], required=True,
         help="build foboot for a particular hardware"
     )
     parser.add_argument(
@@ -276,6 +248,8 @@ def main():
         from rtl.platform.orangecrab import Platform, add_platform_args
     elif args.platform == "fomu":
         from rtl.platform.fomu import Platform, add_platform_args
+    elif args.platform == "icebreaker-bitsy":
+        from rtl.platform.icebreaker_bitsy import Platform, add_platform_args
 
     # Add any platform independent args
     add_platform_args(parser)
@@ -286,11 +260,13 @@ def main():
         platform = Platform(revision=args.revision, device=args.device)
     elif args.platform == "fomu":
         platform = Platform(revision=args.revision)
+    elif args.platform == "icebreaker-bitsy":
+        platform = Platform(revision=args.revision)
 
     output_dir = 'build'
     #if args.export_random_rom_file is not None:
-    rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
-    os.system(f"ecpbram  --generate {rom_rand} --seed {0} --width {32} --depth {int(0x8000/4)}")
+    #rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
+    #os.system(f"ecpbram  --generate {rom_rand} --seed {0} --width {32} --depth {int(0x2000/4)}")
 
     compile_software = True
     if (args.boot_source == "bios" or args.boot_source == "spi") and args.bios is None:
@@ -319,8 +295,8 @@ def main():
     
     
     soc = BaseSoC(platform, cpu_type=cpu_type, cpu_variant=cpu_variant,
-                            debug=args.with_debug, boot_source=args.boot_source,
-                            bios_file=args.bios,
+                            debug=args.with_debug, boot_source='spi',
+                            bios_file=None,
                             use_dsp=args.with_dsp, placer=args.placer,
                             pnr_seed=int(args.seed),
                             output_dir=output_dir)
@@ -328,15 +304,16 @@ def main():
                       compile_software=compile_software, compile_gateware=compile_gateware)
     if compile_software:
         builder.software_packages = [
-            ("bios", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sw")))
+            ("bios", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "loader"))),
+            ("uf2", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sw"))),
         ]
     vns = builder.build()
     soc.do_exit(vns)
     generate_docs(soc, "build/documentation/", project_name="Fomu Bootloader", author="Sean Cross")
     generate_svd(soc, "build/software", vendor="Foosn", name="Fomu")
 
-    if not args.document_only:
-        platform.finalise(output_dir)
+    #if not args.document_only:
+    platform.finalise(output_dir)
 
 
 if __name__ == "__main__":

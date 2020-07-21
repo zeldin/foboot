@@ -3,7 +3,11 @@ ENTRY(_start)
 
 __DYNAMIC = 0;
 
-INCLUDE regions.ld
+
+MEMORY {
+	sram : ORIGIN = 0x01000000 + 0x10000, LENGTH = 0x00010000
+	rom :  ORIGIN = 0x01000000, LENGTH = 0x00010000
+}
 
 SECTIONS
 {

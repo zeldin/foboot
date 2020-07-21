@@ -2,6 +2,8 @@ from migen import Module, Signal, Instance, ClockDomain, If
 
 from litex.build.lattice.platform import LatticePlatform
 
+from migen.genlib.resetsync import AsyncResetSynchronizer
+
 from litex.soc.cores import up5kspram, spi_flash
 
 from litex_boards.targets.fomu import _CRG
@@ -16,9 +18,89 @@ import argparse
 import os
 
 
+
+class _CRG(Module):
+    def __init__(self, platform):
+        clk12_raw = platform.request("clk12")
+        clk48 = Signal()
+        clk12 = Signal()
+        lock = Signal()
+
+        reset_delay = Signal(12, reset=4095)
+        self.clock_domains.cd_por = ClockDomain()
+        self.reset = Signal()
+
+        self.clock_domains.cd_sys = ClockDomain()
+        self.clock_domains.cd_usb_12 = ClockDomain()
+        self.clock_domains.cd_usb_48 = ClockDomain()
+
+        platform.add_period_constraint(self.cd_usb_48.clk, 1e9/48e6)
+        platform.add_period_constraint(self.cd_sys.clk, 1e9/12e6)
+        platform.add_period_constraint(self.cd_usb_12.clk, 1e9/12e6)
+        platform.add_period_constraint(clk12_raw, 1e9/12e6)
+
+        # POR reset logic- POR generated from sys clk, POR logic feeds sys clk
+        # reset.
+        self.comb += [
+            self.cd_por.clk.eq(clk12),
+            self.cd_sys.rst.eq(reset_delay != 0),
+            self.cd_usb_12.rst.eq(reset_delay != 0),
+        ]
+
+        # POR reset logic- POR generated from sys clk, POR logic feeds sys clk
+        # reset.
+        self.comb += [
+            self.cd_usb_48.rst.eq(reset_delay != 0),
+        ]
+
+
+        self.specials += Instance(
+            "SB_PLL40_2F_PAD",
+            # Parameters
+            p_DIVR = 0,
+            p_DIVF = 63,
+            p_DIVQ = 4,
+            p_FILTER_RANGE = 1,
+            p_FEEDBACK_PATH = "SIMPLE",
+            p_DELAY_ADJUSTMENT_MODE_FEEDBACK = "FIXED",
+            p_FDA_FEEDBACK = 0,
+            p_DELAY_ADJUSTMENT_MODE_RELATIVE = "FIXED",
+            p_FDA_RELATIVE = 0,
+            p_SHIFTREG_DIV_MODE = 0,
+            p_PLLOUT_SELECT_PORTA = "GENCLK",
+            p_PLLOUT_SELECT_PORTB = "SHIFTREG_0deg",
+            p_ENABLE_ICEGATE_PORTA = 0,
+            p_ENABLE_ICEGATE_PORTB = 0,
+            # IO
+            i_PACKAGEPIN = clk12_raw,
+            o_PLLOUTGLOBALA = clk48,
+            o_PLLOUTGLOBALB = clk12,
+            #i_EXTFEEDBACK,
+            #i_DYNAMICDELAY,
+            o_LOCK = lock,
+            i_BYPASS = 0,
+            i_RESETB = 1,
+            #i_LATCHINPUTVALUE,
+            #o_SDO,
+            #i_SDI,
+        )
+
+        self.comb += self.cd_sys.clk.eq(clk12)
+        self.comb += self.cd_usb_12.clk.eq(clk12)
+        self.comb += self.cd_usb_48.clk.eq(clk48)
+
+        self.sync.por += \
+            If((reset_delay != 0) & lock,
+                reset_delay.eq(reset_delay - 1)
+            )
+        self.specials += AsyncResetSynchronizer(self.cd_por, self.reset)
+
+
+
+
 def add_platform_args(parser):
     parser.add_argument(
-        "--revision", choices=["evt", "dvt", "pvt", "hacker"], required=True,
+        "--revision", choices=["0.3"], required=True,
         help="build foboot for a particular hardware revision"
     )
 
@@ -28,29 +110,40 @@ class Platform(LatticePlatform):
     def __init__(self, revision=None, toolchain="icestorm"):
         self.revision = revision
         self.hw_platform = "fomu"
-        if revision == "evt":
-            from litex_boards.platforms.fomu_evt import _io, _connectors
-            LatticePlatform.__init__(self, "ice40-up5k-sg48", _io, _connectors, toolchain="icestorm")
-            self.spi_size = 16 * 1024 * 1024
-            self.spi_dummy = 6
-        elif revision == "dvt":
-            from litex_boards.platforms.fomu_pvt import _io, _connectors
-            LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io, _connectors, toolchain="icestorm")
-            self.spi_size = 2 * 1024 * 1024
-            self.spi_dummy = 6
-        elif revision == "pvt":
-            from litex_boards.platforms.fomu_pvt import _io, _connectors
-            LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io, _connectors, toolchain="icestorm")
-            self.spi_size = 2 * 1024 * 1024
-            self.spi_dummy = 6
-        elif revision == "hacker":
-            from litex_boards.platforms.fomu_hacker import _io, _connectors
-            LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io, _connectors, toolchain="icestorm")
-            self.spi_size = 2 * 1024 * 1024
-            self.spi_dummy = 4
-        else:
-            raise ValueError("Unrecognized revision: {}.  Known values: evt, dvt, pvt, hacker".format(revision))
 
+
+        from litex.build.generic_platform import IOStandard, Subsignal, Pins
+
+        _io = [
+            ("clk12", 0, Pins("35"), IOStandard("LVCMOS33")),
+
+            ("user_led_n", 0, Pins("11"), IOStandard("LVCMOS33")),
+            ("rgb_led", 0,
+                Subsignal("r", Pins("40")),
+                Subsignal("g", Pins("39")),
+                Subsignal("b", Pins("41")),
+                IOStandard("LVCMOS33"),
+            ),
+
+            ("usb", 0,
+                Subsignal("d_p", Pins("43")),
+                Subsignal("d_n", Pins("42")),
+                Subsignal("pullup",   Pins("38")),
+                IOStandard("LVCMOS33")
+            ),
+
+            ("spiflash4x", 0,
+                Subsignal("cs_n", Pins("16"), IOStandard("LVCMOS33")),
+                Subsignal("clk",  Pins("15"), IOStandard("LVCMOS33")),
+                Subsignal("dq",   Pins("14 17 12 13"), IOStandard("LVCMOS33")),
+            ),
+            
+        ]
+        LatticePlatform.__init__(self, "ice40-up5k-sg48", _io, [], toolchain="icestorm")
+
+        self.spi_size = 16 * 1024 * 1024
+        self.spi_dummy = 6
+      
         self.warmboot_offsets = [
             160,
             160,
@@ -77,11 +170,13 @@ class Platform(LatticePlatform):
         soc.submodules.reboot = SBWarmBoot(soc, self.warmboot_offsets)
 
     def add_touch(self, soc):
-        self.add_extension(TouchPads.touch_device)
-        soc.submodules.touch = TouchPads(self.request("touch_pads"))
+        ...
+        #self.add_extension(TouchPads.touch_device)
+        #soc.submodules.touch = TouchPads(self.request("touch_pads"))
 
     def add_rgb(self, soc):
         soc.submodules.rgb = SBLED(self.revision, self.request("rgb_led"))
+            
 
     def create_programmer(self):
         raise ValueError("programming is not supported")
@@ -121,17 +216,32 @@ class Platform(LatticePlatform):
         if placer is not None:
             self.toolchain.build_template[1] += " --placer {}".format(placer)
 
-    def finialise(self, output_dir):
-        make_multiboot_header(os.path.join(output_dir, "gateware", "multiboot-header.bin"),
-                                self.warmboot_offsets)
+    def finalise(self, output_dir):
 
-        with open(os.path.join(output_dir, 'gateware', 'multiboot-header.bin'), 'rb') as multiboot_header_file:
-            multiboot_header = multiboot_header_file.read()
-            with open(os.path.join(output_dir, 'gateware', 'top.bin'), 'rb') as top_file:
-                top = top_file.read()
-                with open(os.path.join(output_dir, 'gateware', 'top-multiboot.bin'), 'wb') as top_multiboot_file:
-                    top_multiboot_file.write(multiboot_header)
-                    top_multiboot_file.write(top)
+        output_file = os.path.join(output_dir, "gateware", "combine.bin")
+        
+        gateware = os.path.join(output_dir, "gateware", "icebreaker_bitsy.bin")
+        firmware = os.path.join(output_dir, "software", "uf2", "bios.bin")
+        
+        # Pad bitstream to 128K
+        with open(output_file, 'wb') as f:
+            f.write(open(gateware, "rb").read())
+            f.seek(128 * 1024)
+            f.write(open(firmware, "rb").read())
+
+
+#        make_multiboot_header(os.path.join(output_dir, "gateware", "multiboot-header.bin"),
+#                                self.warmboot_offsets)
+#
+#        with open(os.path.join(output_dir, 'gateware', 'multiboot-header.bin'), 'rb') as multiboot_header_file:
+#            multiboot_header = multiboot_header_file.read()
+#            with open(os.path.join(output_dir, 'gateware', 'top.bin'), 'rb') as top_file:
+#                top = top_file.read()
+#                with open(os.path.join(output_dir, 'gateware', 'top-multiboot.bin'), 'wb') as top_multiboot_file:
+#                    top_multiboot_file.write(multiboot_header)
+#                    top_multiboot_file.write(top)
+
+                
 
         print(
     """Foboot build complete.  Output files:

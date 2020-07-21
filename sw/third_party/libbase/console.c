@@ -29,12 +29,12 @@
 #include <hw/flags.h>
 #include <uart.h>
 
-static char _printf_buf[256];
+static char _printf_buf[2];
 
 
 void console_init(void)
 {
-    uart_init();
+//    uart_init();
 }
 
 char getchar(void)
@@ -49,7 +49,7 @@ int getchar_nowait(void)
 
 void putchar(char c)
 {
-    uart_write(c);
+//    uart_write(c);
 }
 
 void puts(const char *p)

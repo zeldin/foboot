@@ -1,7 +1,6 @@
 from migen import Module, Signal, If, Instance
 from litex.soc.integration.doc import ModuleDoc
 from litex.soc.interconnect.csr import AutoCSR, CSRStatus, CSRStorage, CSRField
-import lxsocdoc
 
 class SBWarmBoot(Module, AutoCSR):
     def __init__(self, parent, offsets=None):
@@ -11,8 +10,8 @@ class SBWarmBoot(Module, AutoCSR):
             arr = [["Image", "Offset"]]
             for i,offset in enumerate(offsets):
                 arr.append([str(i), str(offset)])
-            table = "\nYou can use this block to reboot into one of these four addresses:\n\n" \
-                  + lxsocdoc.rst.make_table(arr)
+            table = "\nYou can use this block to reboot into one of these four addresses:\n\n" #\
+                 # + lxsocdoc.rst.make_table(arr)
         self.intro = ModuleDoc("""FPGA Reboot Interface
 
             This module provides the ability to reboot the FPGA.  It is based on the

@@ -4,24 +4,12 @@
 [submodule "hw/deps/litex"]
 	path = hw/deps/litex
 	url = https://github.com/enjoy-digital/litex.git
-[submodule "hw/deps/litescope"]
-	path = hw/deps/litescope
-	url = https://github.com/enjoy-digital/litescope.git
-[submodule "hw/deps/litedram"]
-	path = hw/deps/litedram
-	url = https://github.com/enjoy-digital/litedram.git
 [submodule "hw/deps/valentyusb"]
 	path = hw/deps/valentyusb
 	url = https://github.com/im-tomu/valentyusb.git
 [submodule "hw/deps/litex-boards"]
 	path = hw/deps/litex-boards
 	url = https://github.com/litex-hub/litex-boards.git
-[submodule "hw/deps/lxsocdoc"]
-	path = hw/deps/lxsocdoc
-	url = https://github.com/xobs/lxsocdoc.git
-[submodule "hw/deps/spibone"]
-	path = hw/deps/spibone
-	url = https://github.com/xobs/spibone.git
 [submodule "sw/third_party/tinyusb"]
 	path = sw/third_party/tinyusb
 	url = https://github.com/hathach/tinyusb.git

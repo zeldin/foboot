@@ -55,7 +55,7 @@ void rgb_init(void) {
     // Set clock register to 12 MHz / 64 kHz - 1
     rgb_write((12000000/64000)-1, LEDDBR);
 
-    rgb_mode_idle();
+    rgb_mode_writing();
 }
 
 static void rgb_switch_mode(uint8_t mode,

@@ -74,20 +74,15 @@ void led_blinking_task(void)
         return; // not enough time
     start_ms += blink_interval_ms;
 
-    rgb_config_write(0);
+    //rgb_config_write(0);
 
     if (led_state)
     {
-        rgb__r_write(0);
-        rgb__g_write(0);
-        rgb__b_write(0);
+        rgb_mode_idle();
     }
     else
     {
-
-        rgb__r_write(0);
-        rgb__g_write(250);
-        rgb__b_write(250);
+        rgb_mode_done();
     }
 
     led_state = 1 - led_state; // toggle
@@ -110,7 +105,7 @@ static void init(void)
     rgb_init();
 
     timer_init();
-    console_init();
+    //console_init();
 
     irq_setmask(0);
     irq_setie(1);

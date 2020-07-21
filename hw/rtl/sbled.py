@@ -76,7 +76,7 @@ class SBLED(Module, AutoCSR):
             ]
 
 
-        if 0:
+        if 1:
             self.specials += Instance("SB_RGBA_DRV",
                 i_CURREN = self.ctrl.storage[1],
                 i_RGBLEDEN = self.ctrl.storage[2],
