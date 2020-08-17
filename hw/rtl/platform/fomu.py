@@ -4,7 +4,7 @@ from litex.build.lattice.platform import LatticePlatform
 
 from litex.soc.cores import up5kspram, spi_flash
 
-from litex_boards.partner.targets.fomu import _CRG
+from litex_boards.targets.fomu import _CRG
 
 import litex.soc.doc as lxsocdoc
 import spibone
@@ -31,22 +31,22 @@ class Platform(LatticePlatform):
         self.revision = revision
         self.hw_platform = "fomu"
         if revision == "evt":
-            from litex_boards.partner.platforms.fomu_evt import _io, _connectors
+            from litex_boards.platforms.fomu_evt import _io, _connectors
             LatticePlatform.__init__(self, "ice40-up5k-sg48", _io, _connectors, toolchain="icestorm")
             self.spi_size = 16 * 1024 * 1024
             self.spi_dummy = 6
         elif revision == "dvt":
-            from litex_boards.partner.platforms.fomu_pvt import _io, _connectors
+            from litex_boards.platforms.fomu_pvt import _io, _connectors
             LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io, _connectors, toolchain="icestorm")
             self.spi_size = 2 * 1024 * 1024
             self.spi_dummy = 6
         elif revision == "pvt":
-            from litex_boards.partner.platforms.fomu_pvt import _io, _connectors
+            from litex_boards.platforms.fomu_pvt import _io, _connectors
             LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io, _connectors, toolchain="icestorm")
             self.spi_size = 2 * 1024 * 1024
             self.spi_dummy = 6
         elif revision == "hacker":
-            from litex_boards.partner.platforms.fomu_hacker import _io, _connectors
+            from litex_boards.platforms.fomu_hacker import _io, _connectors
             LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io, _connectors, toolchain="icestorm")
             self.spi_size = 2 * 1024 * 1024
             self.spi_dummy = 4
@@ -60,6 +60,19 @@ class Platform(LatticePlatform):
             262144,
             262144 + 32768,
         ]
+
+    def get_config(self, git_version):
+        return [
+            ("USB_VENDOR_ID", 0x1209),     # pid.codes
+            ("USB_PRODUCT_ID", 0x5bf0),     # Assigned to Fomu project
+            ("USB_DEVICE_VER", 0x0101),    # Bootloader version
+            ("USB_MANUFACTURER_NAME", "Foosn"),
+            ] + {
+                "evt":   [("USB_PRODUCT_NAME", "Fomu EVT running DFU Bootloader {}".format(git_version))],
+                "dvt":   [("USB_PRODUCT_NAME", "Fomu DVT running DFU Bootloader {}".format(git_version))],
+                "pvt":   [("USB_PRODUCT_NAME", "Fomu PVT running DFU Bootloader {}".format(git_version))],
+                "hacker":[("USB_PRODUCT_NAME", "Fomu Hacker running DFU Bootloader {}".format(git_version))],
+            }[self.revision]
 
     def add_crg(self, soc):
         soc.submodules.crg = _CRG(self)

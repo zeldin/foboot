@@ -35,6 +35,7 @@ import spibone
 
 import argparse
 import os
+import subprocess
 
 from rtl.version import Version
 from rtl.romgen import RandomFirmwareROM, FirmwareROMHex
@@ -231,7 +232,11 @@ class BaseSoC(SoCCore, AutoDoc):
 
         if hasattr(platform, "build_templates"):
             platform.build_templates(use_dsp, pnr_seed, placer)
-            
+
+        git_version_subprocess = subprocess.Popen("git describe --tags", shell=True, stdout=subprocess.PIPE)
+        git_version = git_version_subprocess.stdout.read().decode("utf-8").strip()
+        for (name,value) in platform.get_config(git_version):
+            self.add_constant("CONFIG_" + name, value)
 
 def main():
     parser = argparse.ArgumentParser(

@@ -53,7 +53,16 @@ class Platform(LatticePlatform):
         PlatformOC.__init__(self, device=device, revision=revision, toolchain=toolchain)
         self.revision = f'r{revision}'
 
-
+    def get_config(self, git_version):
+        return [
+            ("USB_VENDOR_ID", 0x1209),     # pid.codes
+            ("USB_PRODUCT_ID", 0x5af0),    # Assigned to OrangeCrab DFU
+            ("USB_DEVICE_VER", 0x0101),    # Bootloader version
+            ("USB_MANUFACTURER_NAME", "GsD"),
+            ] + {
+                "r0.1":[("USB_PRODUCT_NAME", "OrangeCrab r0.1 DFU Bootloader {}".format(git_version))],
+                "r0.2":[("USB_PRODUCT_NAME", "OrangeCrab r0.2 DFU Bootloader {}".format(git_version))],
+            }[self.revision]
 
     def create_programmer(self):
         raise ValueError("programming is not supported")
@@ -215,4 +224,3 @@ class _CRG(Module):
                 reset_delay.eq(reset_delay - 1)
             )
         self.specials += AsyncResetSynchronizer(self.cd_por, self.reset)
-            

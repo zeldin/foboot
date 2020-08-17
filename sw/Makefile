@@ -1,5 +1,3 @@
-GIT_VERSION := $(shell git describe --tags)
-
 # Earlier versions of the Raspberry Pi image only had riscv32-gcc
 ifneq (,$(wildcard /usr/bin/riscv32-unknown-elf-gcc))
 TRGT       ?= riscv32-unknown-elf-
@@ -49,7 +47,7 @@ CFLAGS     := $(ADD_CFLAGS) \
 			  -ffunction-sections -fdata-sections -fno-common \
 			  -fomit-frame-pointer -Os \
 			  -march=rv32i \
-			  -DGIT_VERSION=u\"$(GIT_VERSION)\" -std=gnu11
+			  -std=gnu11
 CXXFLAGS   := $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions
 LFLAGS     := $(CFLAGS) $(ADD_LFLAGS) -L$(LD_DIR) \
 			  -nostartfiles \
