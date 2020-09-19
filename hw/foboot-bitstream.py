@@ -105,9 +105,10 @@ class BaseSoC(SoCCore, AutoDoc):
         self.output_dir = output_dir
 
         clk_freq = int(12e6)
-        platform.add_crg(self)
 
         SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=0, with_uart=False, csr_data_width=32, **kwargs)
+        
+        platform.add_crg(self)
         
         usb_debug = False
         if debug is not None:
@@ -199,6 +200,10 @@ class BaseSoC(SoCCore, AutoDoc):
             self.specials += pulldown.get_tristate(usb_pads.pulldown)
             self.comb += pulldown.oe.eq(0)
 
+        if hasattr(usb_pads, "sw_sel"):
+            self.comb += usb_pads.sw_sel.eq(1)
+
+
         # Add GPIO pads for the touch buttons
         if hasattr(platform, "add_touch"):
             platform.add_touch(self)
@@ -250,7 +255,7 @@ def main():
         help="Don't build gateware or software, only build documentation"
     )
     parser.add_argument(
-        "--platform", choices=["fomu", "orangecrab"], required=True,
+        "--platform", choices=["fomu", "orangecrab", "DiVA"], required=True,
         help="build foboot for a particular hardware"
     )
     parser.add_argument(
@@ -284,6 +289,8 @@ def main():
         from rtl.platform.orangecrab import Platform, add_platform_args
     elif args.platform == "fomu":
         from rtl.platform.fomu import Platform, add_platform_args
+    elif args.platform == "DiVA":
+        from rtl.platform.diva import Platform, add_platform_args
 
     # Add any platform independent args
     add_platform_args(parser)
@@ -294,6 +301,8 @@ def main():
         platform = Platform(revision=args.revision, device=args.device)
     elif args.platform == "fomu":
         platform = Platform(revision=args.revision)
+    elif args.platform == "DiVA":
+        platform = Platform(device=args.device)
 
     output_dir = 'build'
     #if args.export_random_rom_file is not None:

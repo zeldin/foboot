@@ -214,7 +214,7 @@ void reboot(void) {
             boot_config = destination_array[i + 1];
         }
     }
-#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2)
+#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2) | defined(CONFIG_BOOT_RISCV)
     char *destination_array = (char *)reboot_addr;
     // We want to support murtiple parts, 
     // so we just check the start of the bitstream header.
@@ -254,7 +254,7 @@ static void init(void)
 #endif
     spiInit();
 
-#if defined(CONFIG_ORANGECRAB_REV_R0_1)
+#if defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_QSPI_ENABLE)
     // Check for QE bit set. If not set, enable it.
     spiSetQE();
 #endif
@@ -266,7 +266,7 @@ static void init(void)
         maybe_boot_fbm();
         lxspi_bitbang_en_write(1);
     }
-#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2)
+#elif defined(CSR_BUTTON_BASE)
     if(!button_pressed()){
         spiFree();
         reboot();
