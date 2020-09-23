@@ -26,6 +26,9 @@ void usb_setup(const struct usb_setup_request *setup)
         break;
 
     case 0x0b01: // SET_INTERFACE
+        //if(setup->wIndex == 0){
+        dfu_setaltmode(setup->wValue);
+        //}
         dfu_clrstatus();
         break;
 

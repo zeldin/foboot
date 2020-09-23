@@ -59,6 +59,11 @@ class Platform(LatticePlatform):
             ("USB_PRODUCT_ID", 0x5af0),    # Assigned to OrangeCrab DFU
             ("USB_DEVICE_VER", 0x0101),    # Bootloader version
             ("USB_MANUFACTURER_NAME", "GsD"),
+            ("USB_ALT0_NAME", "0x00080000 Bitstream"),
+            ("USB_ALT1_NAME", "0x00100000 RISC-V Firmware"),
+            ("USB_ALT0_ADDR", 0x00080000),
+            ("USB_ALT1_ADDR", 0x00100000),
+            
             ] + {
                 "r0.1":[("USB_PRODUCT_NAME", "OrangeCrab r0.1 DFU Bootloader {}".format(git_version))],
                 "r0.2":[("USB_PRODUCT_NAME", "OrangeCrab r0.2 DFU Bootloader {}".format(git_version))],

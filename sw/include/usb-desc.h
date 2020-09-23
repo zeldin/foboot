@@ -68,6 +68,15 @@ struct usb_string_descriptor_struct {
 #define PRODUCT_NAME              CONCAT2(u, CONFIG_USB_PRODUCT_NAME)
 #define PRODUCT_NAME_LEN          sizeof(PRODUCT_NAME)
 
+#ifdef CONFIG_USB_ALT0_NAME
+#define ALT0_NAME                 CONCAT2(u, CONFIG_USB_ALT0_NAME)
+#define ALT0_NAME_LEN             sizeof(ALT0_NAME)
+#endif
+#ifdef CONFIG_USB_ALT1_NAME
+#define ALT1_NAME                 CONCAT2(u, CONFIG_USB_ALT1_NAME)
+#define ALT1_NAME_LEN             sizeof(ALT1_NAME)
+#endif
+
 #define EP0_SIZE                  64
 #define NUM_INTERFACE             1
 
