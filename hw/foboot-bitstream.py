@@ -156,11 +156,11 @@ class BaseSoC(SoCCore, AutoDoc):
         elif boot_source == "bios":
             kwargs['cpu_reset_address'] = 0
             if bios_file is None:
-                self.integrated_rom_size = bios_size = 0x4000
+                self.integrated_rom_size = bios_size = 0x2000
                 self.submodules.rom = wishbone.SRAM(bios_size, read_only=True, init=[])
                 self.register_rom(self.rom.bus, bios_size)
             else:
-                bios_size = 0x4000
+                bios_size = 0x2000
                 self.submodules.firmware_rom = FirmwareROMHex(bios_size, bios_file)
                 self.add_constant("ROM_DISABLE", 1)
                 self.register_rom(self.firmware_rom.bus, bios_size)
@@ -342,7 +342,7 @@ def main():
     soc.do_exit(vns)
     lxsocdoc.generate_docs(soc, "build/documentation/", project_name="Fomu Bootloader", author="Sean Cross")
 
-    if not args.document_only:
+    if not args.document_only and hasattr(platform, "finalise"):
         platform.finalise(output_dir)
 
 

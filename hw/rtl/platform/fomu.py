@@ -136,13 +136,13 @@ class Platform(LatticePlatform):
         if placer is not None:
             self.toolchain.build_template[1] += " --placer {}".format(placer)
 
-    def finialise(self, output_dir):
+    def finalise(self, output_dir):
         make_multiboot_header(os.path.join(output_dir, "gateware", "multiboot-header.bin"),
                                 self.warmboot_offsets)
 
         with open(os.path.join(output_dir, 'gateware', 'multiboot-header.bin'), 'rb') as multiboot_header_file:
             multiboot_header = multiboot_header_file.read()
-            with open(os.path.join(output_dir, 'gateware', 'top.bin'), 'rb') as top_file:
+            with open(os.path.join(output_dir, 'gateware', 'fomu.bin'), 'rb') as top_file:
                 top = top_file.read()
                 with open(os.path.join(output_dir, 'gateware', 'top-multiboot.bin'), 'wb') as top_multiboot_file:
                     top_multiboot_file.write(multiboot_header)
