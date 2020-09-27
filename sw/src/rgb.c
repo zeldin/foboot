@@ -2,7 +2,7 @@
 #include <generated/csr.h>
 
 
-#if defined(CSR_RGB_DAT_ADDR)
+#if defined(CSR_RGB_ADDR_ADDR)
 
 enum led_registers {
     LEDDCR0 = 8,
