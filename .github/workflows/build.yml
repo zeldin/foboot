@@ -25,10 +25,8 @@ jobs:
     - name: Build
       working-directory: ./hw
       run: |
-        echo $PATH
-        echo $GITHUB_PATH
         yosys -V
         nextpnr-ecp5 -V
-        python foboot-bitstream.py --platform orangecrab --revision 0.2
+        python3 foboot-bitstream.py --platform orangecrab --revision 0.2
 
       
