@@ -38,9 +38,9 @@ jobs:
         python3 foboot-bitstream.py --platform orangecrab --revision 0.2
 
     - name: Upload bitstream
-        uses: actions/upload-artifact@v2
-        with:
-          name: OrangeCrab Foboot Bitstream
-          path: build/gateware/foboot.bit
+      uses: actions/upload-artifact@v2
+      with:
+        name: OrangeCrab Foboot Bitstream
+        path: build/gateware/foboot.bit
 
       
