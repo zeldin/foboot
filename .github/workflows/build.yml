@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
-        with:
-          submodules: true
-          fetch-depth: 2
+      with:
+        submodules: true
+        fetch-depth: 2
 
     - name: configure fpga-toolchain
       run: |
