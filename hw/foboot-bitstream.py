@@ -296,7 +296,9 @@ def main():
         platform = Platform(revision=args.revision)
 
     output_dir = 'build'
+    os.makedirs(os.path.join(output_dir, "gateware"), exist_ok=True)
     #if args.export_random_rom_file is not None:
+
     rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
     os.system(f"ecpbram  --generate {rom_rand} --seed {0} --width {32} --depth {int(0x4000/4)}")
 
