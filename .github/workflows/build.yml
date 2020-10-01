@@ -43,6 +43,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: OrangeCrab Foboot Bitstream
-        path: $GITHUB_WORKSPACE/hw/build/gateware/foboot.bit
+        path: ${{ github.workspace }}/hw/build/gateware/foboot.bit
 
       
