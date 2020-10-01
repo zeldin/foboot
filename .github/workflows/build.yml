@@ -36,7 +36,7 @@ jobs:
         yosys -V
         nextpnr-ecp5 -V
         python3 foboot-bitstream.py --platform orangecrab --revision 0.2
-        cwd
+        pwd
         ls -R build
 
     - name: Upload bitstream
