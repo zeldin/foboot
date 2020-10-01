@@ -1,0 +1,27 @@
+name: build
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: configure fpga-toolchain
+      run: |
+        export VERSION=nightly-20200930
+        wget https://github.com/open-tool-forge/fpga-toolchain/releases/download/$VERSION/fpga-toolchain-linux_x86_64-$VERSION.tar.xz
+        tar -xvzf fpga-toolchain-linux_x86_64-$VERSION.tar.xz
+        rm -rf fpga-toolchain-linux_x86_64-$VERSION.tar.xz
+        export PATH=fpga-toolchain/bin:$PATH
+
+    - name: Build
+      working-directory: ./hw
+      run: |
+        yosys -V
+        nextpnr-ecp5 -V
+        python foboot-bitstream.py --platform orangecrab --revision 0.2
+
+      
