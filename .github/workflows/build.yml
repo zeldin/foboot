@@ -32,7 +32,7 @@ jobs:
     - name: Build
       working-directory: ./hw
       run: |
-        pip3 install --user PIL
+        python3 -m pip install Pillow
         yosys -V
         nextpnr-ecp5 -V
         python3 foboot-bitstream.py --platform orangecrab --revision 0.2
