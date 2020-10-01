@@ -9,6 +9,11 @@ jobs:
   deploy:
     runs-on: ubuntu-18.04
     steps:
+    - uses: actions/checkout@v2
+        with:
+          submodules: true
+          fetch-depth: 2
+
     - name: configure fpga-toolchain
       run: |
         export VERSION=nightly-20200930
@@ -16,10 +21,14 @@ jobs:
         tar -xf fpga-toolchain-linux_x86_64-$VERSION.tar.xz
         rm -rf fpga-toolchain-linux_x86_64-$VERSION.tar.xz
         echo "fpga-toolchain/bin" >> $GITHUB_PATH
+        echo $PATH
+        echo $GITHUB_PATH
 
     - name: Build
       working-directory: ./hw
       run: |
+        echo $PATH
+        echo $GITHUB_PATH
         yosys -V
         nextpnr-ecp5 -V
         python foboot-bitstream.py --platform orangecrab --revision 0.2
