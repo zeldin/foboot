@@ -97,7 +97,11 @@ static const uint8_t device_descriptor[] = {
 
 // USB Configuration Descriptor.  This huge descriptor tells all
 // of the devices capbilities.
+#ifdef ALT1_NAME
+#define CONFIG_DESC_SIZE 27 + 18
+#else
 #define CONFIG_DESC_SIZE 27
+#endif
 static const uint8_t config_descriptor[CONFIG_DESC_SIZE] = {
         // configuration descriptor, USB spec 9.6.3, page 264-266, Table 9-10
         9,                                      // bLength;
@@ -110,7 +114,7 @@ static const uint8_t config_descriptor[CONFIG_DESC_SIZE] = {
         0x80,                                   // bmAttributes
         50,                                     // bMaxPower
 
-        // interface descriptor, DFU Mode (DFU spec Table 4.4)
+        // Alt 0: interface descriptor, DFU Mode (DFU spec Table 4.4)
         9,                                      // bLength
         4,                                      // bDescriptorType
         DFU_INTERFACE,                          // bInterfaceNumber
@@ -119,7 +123,11 @@ static const uint8_t config_descriptor[CONFIG_DESC_SIZE] = {
         0xFE,                                   // bInterfaceClass
         0x01,                                   // bInterfaceSubClass
         0x02,                                   // bInterfaceProtocol
-        2,                                      // iInterface
+#ifdef ALT0_NAME
+        3,                                      // iInterface
+#else
+        2,                                      // iInterface [use USB product name]
+#endif
 
         // DFU Functional Descriptor (DFU spec Table 4.2)
         9,                                      // bLength
@@ -130,6 +138,28 @@ static const uint8_t config_descriptor[CONFIG_DESC_SIZE] = {
         LSB(DFU_TRANSFER_SIZE),                 // wTransferSize
         MSB(DFU_TRANSFER_SIZE),
         0x01,0x01,                              // bcdDFUVersion
+#ifdef ALT1_NAME
+        // Alt 1: interface descriptor, DFU Mode (DFU spec Table 4.4)
+        9,                                      // bLength
+        4,                                      // bDescriptorType
+        DFU_INTERFACE,                          // bInterfaceNumber
+        1,                                      // bAlternateSetting
+        0,                                      // bNumEndpoints
+        0xFE,                                   // bInterfaceClass
+        0x01,                                   // bInterfaceSubClass
+        0x02,                                   // bInterfaceProtocol
+        4,                                      // iInterface
+
+        // DFU Functional Descriptor (DFU spec Table 4.2)
+        9,                                      // bLength
+        0x21,                                   // bDescriptorType
+        0x0D,                                   // bmAttributes
+        LSB(DFU_DETACH_TIMEOUT),                // wDetachTimeOut
+        MSB(DFU_DETACH_TIMEOUT),
+        LSB(DFU_TRANSFER_SIZE),                 // wTransferSize
+        MSB(DFU_TRANSFER_SIZE),
+        0x01,0x01,                              // bcdDFUVersion
+#endif
 };
 
 
@@ -219,6 +249,25 @@ static const struct usb_string_descriptor_struct usb_string_product_name = {
     PRODUCT_NAME
 };
 
+/* DFU interfaces */
+#ifdef ALT0_NAME
+__attribute__((aligned(4)))
+static const struct usb_string_descriptor_struct alt0_name = {
+    2 + ALT0_NAME_LEN,
+    3,
+    ALT0_NAME
+};
+#endif
+
+#ifdef ALT1_NAME
+__attribute__((aligned(4)))
+static const struct usb_string_descriptor_struct alt1_name = {
+    2 + ALT1_NAME_LEN,
+    3,
+    ALT1_NAME
+};
+#endif
+
 // **************************************************************
 //   Descriptors List
 // **************************************************************
@@ -231,6 +280,12 @@ const usb_descriptor_list_t usb_descriptor_list[] = {
     {0x0300, 0, (const uint8_t *)&string0},
     {0x0301, 0, (const uint8_t *)&usb_string_manufacturer_name},
     {0x0302, 0, (const uint8_t *)&usb_string_product_name},
+#ifdef ALT0_NAME
+    {0x0303, 0, (const uint8_t *)&alt0_name},
+#endif
+#ifdef ALT1_NAME
+    {0x0304, 0, (const uint8_t *)&alt1_name},
+#endif
     {0x03EE, 0, (const uint8_t *)&usb_string_microsoft},
     {0x0F00, sizeof(full_bos), (const uint8_t *)&full_bos},
     {0, 0, NULL}

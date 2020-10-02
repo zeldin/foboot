@@ -20,6 +20,7 @@ uint32_t spiId(void);
 int spiWrite(uint32_t addr, const uint8_t *data, unsigned int count);
 uint8_t spiReset(void);
 int spiInit(void);
+void spiSetQE(void);
 
 void spiHold(void);
 void spiUnhold(void);

@@ -56,38 +56,27 @@ struct usb_string_descriptor_struct {
     uint16_t wString[];
 };
 
+#define CONCAT2_(a, b) a ## b
+#define CONCAT2(a, b) CONCAT2_(a, b)
+
 #define NUM_USB_BUFFERS           8
-#if defined(CONFIG_FOMU_REV)
-#define VENDOR_ID                 0x1209    // pid.codes
-#define PRODUCT_ID                0x5bf0    // Assigned to Fomu project
-#define DEVICE_VER                0x0101    // Bootloader version
-#define MANUFACTURER_NAME         u"Foosn"
+#define VENDOR_ID                 CONFIG_USB_VENDOR_ID
+#define PRODUCT_ID                CONFIG_USB_PRODUCT_ID
+#define DEVICE_VER                CONFIG_USB_DEVICE_VER
+#define MANUFACTURER_NAME         CONCAT2(u, CONFIG_USB_MANUFACTURER_NAME)
 #define MANUFACTURER_NAME_LEN     sizeof(MANUFACTURER_NAME)
-#if defined(CONFIG_FOMU_REV_PVT)
-#define PRODUCT_NAME              u"Fomu PVT running DFU Bootloader " GIT_VERSION
-#elif defined(CONFIG_FOMU_REV_DVT)
-#define PRODUCT_NAME              u"Fomu DVT running DFU Bootloader " GIT_VERSION
-#elif defined(CONFIG_FOMU_REV_EVT)
-#define PRODUCT_NAME              u"Fomu EVT running DFU Bootloader " GIT_VERSION
-#elif defined(CONFIG_FOMU_REV_HACKER)
-#define PRODUCT_NAME              u"Fomu Hacker running DFU Bootloader " GIT_VERSION
-#else
-#define PRODUCT_NAME              u"Fomu DFU Bootloader " GIT_VERSION
+#define PRODUCT_NAME              CONCAT2(u, CONFIG_USB_PRODUCT_NAME)
+#define PRODUCT_NAME_LEN          sizeof(PRODUCT_NAME)
+
+#ifdef CONFIG_USB_ALT0_NAME
+#define ALT0_NAME                 CONCAT2(u, CONFIG_USB_ALT0_NAME)
+#define ALT0_NAME_LEN             sizeof(ALT0_NAME)
 #endif
-#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2)
-#define VENDOR_ID                 0x1209    // pid.codes
-#define PRODUCT_ID                0x5af0    // Assigned to OrangeCrab DFU
-#define DEVICE_VER                0x0101    // Bootloader version
-#define MANUFACTURER_NAME         u"GsD"
-#define MANUFACTURER_NAME_LEN     sizeof(MANUFACTURER_NAME)
-#if defined(CONFIG_ORANGECRAB_REV_R0_1)
-#define PRODUCT_NAME              u"OrangeCrab r0.1 DFU Bootloader " GIT_VERSION
-#elif defined(CONFIG_ORANGECRAB_REV_R0_2)
-#define PRODUCT_NAME              u"OrangeCrab r0.2 DFU Bootloader " GIT_VERSION
-#endif
+#ifdef CONFIG_USB_ALT1_NAME
+#define ALT1_NAME                 CONCAT2(u, CONFIG_USB_ALT1_NAME)
+#define ALT1_NAME_LEN             sizeof(ALT1_NAME)
 #endif
 
-#define PRODUCT_NAME_LEN          sizeof(PRODUCT_NAME)
 #define EP0_SIZE                  64
 #define NUM_INTERFACE             1
 

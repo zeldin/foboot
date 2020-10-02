@@ -53,7 +53,21 @@ class Platform(LatticePlatform):
         PlatformOC.__init__(self, device=device, revision=revision, toolchain=toolchain)
         self.revision = f'r{revision}'
 
-
+    def get_config(self, git_version):
+        return [
+            ("USB_VENDOR_ID", 0x1209),     # pid.codes
+            ("USB_PRODUCT_ID", 0x5af0),    # Assigned to OrangeCrab DFU
+            ("USB_DEVICE_VER", 0x0101),    # Bootloader version
+            ("USB_MANUFACTURER_NAME", "GsD"),
+            ("USB_ALT0_NAME", "0x00080000 Bitstream"),
+            ("USB_ALT1_NAME", "0x00100000 RISC-V Firmware"),
+            ("USB_ALT0_ADDR", 0x00080000),
+            ("USB_ALT1_ADDR", 0x00100000),
+            
+            ] + {
+                "r0.1":[("USB_PRODUCT_NAME", "OrangeCrab r0.1 DFU Bootloader {}".format(git_version))],
+                "r0.2":[("USB_PRODUCT_NAME", "OrangeCrab r0.2 DFU Bootloader {}".format(git_version))],
+            }[self.revision]
 
     def create_programmer(self):
         raise ValueError("programming is not supported")
@@ -119,8 +133,8 @@ class Platform(LatticePlatform):
             
     def finalise(self, output_dir):
         # combine bitstream and rom
-        input_config = os.path.join(output_dir, "gateware", "top.config")
-        input_rom_config = os.path.join(output_dir, "gateware", "top_rom.config")
+        input_config = os.path.join(output_dir, "gateware", f"{self.name}.config")
+        input_rom_config = os.path.join(output_dir, "gateware", f"{self.name}_rom.config")
         input_rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
         input_bios_bin = os.path.join(output_dir, "software","bios", "bios.bin")
         input_bios_hex = os.path.join(output_dir, "software","bios", "bios.init")
@@ -144,15 +158,18 @@ class Platform(LatticePlatform):
         # create a bitstream for loading into FLASH
         #input_config = os.path.join(output_dir, "gateware", "top.config")
         output_bitstream = os.path.join(output_dir, "gateware", "foboot.bit")
-        os.system(f"ecppack --spimode qspi --freq 38.8 --compress --bootaddr 0x80000 --input {input_rom_config} --bit {output_bitstream}")
+
+        # Don't enable QSPI mode on r0.1 (By default the SPI chips don't have QE set)
+        spi_mode = '' if self.revision == 'r0.1' else '--spimode qspi'
+        os.system(f"ecppack {spi_mode} --freq 38.8 --compress --bootaddr 0x80000 --input {input_rom_config} --bit {output_bitstream}")
 
         # create a SVF for loading with JTAG adapter
-        output_svf = os.path.join(output_dir, "gateware", "top.svf")
-        os.system(f"ecppack --input {input_rom_config} --svf {output_svf}")
+        #output_svf = os.path.join(output_dir, "gateware", "top.svf")
+        #os.system(f"ecppack --input {input_rom_config} --svf {output_svf}")
 
         # create an SVF for loading into SPI FLASH with a simple JTAG adapter
-        output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
-        os.system(f"python3 util/ecp5_background_spi.py {output_bitstream} {output_svf}")
+        #output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
+        #os.system(f"python3 util/ecp5_background_spi.py {output_bitstream} {output_svf}")
 
 
 
@@ -212,4 +229,3 @@ class _CRG(Module):
                 reset_delay.eq(reset_delay - 1)
             )
         self.specials += AsyncResetSynchronizer(self.cd_por, self.reset)
-            

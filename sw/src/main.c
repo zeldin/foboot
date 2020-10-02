@@ -9,7 +9,12 @@
 #include <generated/csr.h>
 #include <generated/mem.h>
 
-struct ff_spi *spi;
+// reboot function
+__attribute__((noreturn)) static inline void warmboot_to_image(uint8_t image_index) {
+	reboot_ctrl_write(0xac | (image_index & 3) << 0);
+	while (1);
+}
+
 
 // ICE40UP5K bitstream images (with SB_MULTIBOOT header) are
 // 104250 bytes.  The SPI flash has 4096-byte erase blocks.
@@ -194,7 +199,7 @@ void reboot(void) {
 
     // Scan for configuration data.
     int i;
-    int riscv_boot = 1;
+    int riscv_boot = 0;
 #if defined(CONFIG_FOMU_REV)
     uint32_t *destination_array = (uint32_t *)reboot_addr;
     for (i = 0; i < 32; i++) {
@@ -213,24 +218,23 @@ void reboot(void) {
     char *destination_array = (char *)reboot_addr;
     // We want to support murtiple parts, 
     // so we just check the start of the bitstream header.
-    const char magic[]="\xFF\x00Part: LFE5";
-	for (i = 0; i < (int)sizeof(magic) - 1; i++) {
-        if(destination_array[i] == magic[i]) {
-            riscv_boot = 0; // FLASH appears to be an ECP5 bitstream
-        }else {
-            riscv_boot = 1; // Assume it's RISCV code, and jump to it.
-            break;
-        }
+    const char magic[]="\xFF\x00";
+    if((destination_array[0] == magic[0]) && (destination_array[1] == magic[1])) {
+        riscv_boot = 0; // FLASH appears to be an ECP5 bitstream
+    }else {
+        riscv_boot = 1; // Assume it's RISCV code, and jump to it.
     }
 #endif
-
 
     if (riscv_boot) {
         riscv_reboot_to((void *)reboot_addr, boot_config);
     }
     else {
         // Issue a reboot
-        warmboot_to_image(2);
+        while(1){
+            // For some reason writing to this register can fail if followed by an empty while loop
+            reboot_ctrl_write(0xac); 
+        }
     }
     __builtin_unreachable();
 }
@@ -249,6 +253,11 @@ static void init(void)
     picorvspi_cfg4_write(0x80);
 #endif
     spiInit();
+
+#if defined(CONFIG_ORANGECRAB_REV_R0_1)
+    // Check for QE bit set. If not set, enable it.
+    spiSetQE();
+#endif
 
 #if defined(CONFIG_FOMU_REV)
     if (!nerve_pinch()) {

@@ -27,6 +27,7 @@
 #include <dfu.h>
 #include <rgb.h>
 #include <generated/mem.h>
+#include <generated/soc.h>
 #include <generated/csr.h>
 
 #ifndef CONFIG_RESCUE_IMAGE_OFFSET
@@ -37,7 +38,10 @@
 #define ERASE_SIZE 4096 // Erase block size (in bytes)
 #define WRITE_SIZE 256 // Number of bytes we can write
 
-#define FLASH_MAX_ADDR ((1024 * 1024) + (1024 * 512)) // 1.5 MB max
+// FLASH_MAX_ADDR should be set as part of the LiteX platform
+#ifndef FLASH_MAX_ADDR
+#error FLASH_MAX_ADDR NOT DEFINED
+#endif
 
 #include <spi.h>
 
@@ -62,6 +66,7 @@ static uint32_t dfu_buffer[DFU_TRANSFER_SIZE/4];
 static uint32_t dfu_buffer_offset;
 static uint32_t dfu_bytes_remaining;
 static uint32_t ram_mode; // Set this to non-zero to load data into RAM.
+static uint32_t start_addr = CONFIG_RESCUE_IMAGE_OFFSET;
 
 // Memory offset we're uploading to.
 static uint32_t dfu_target_address;
@@ -69,7 +74,15 @@ static uint32_t dfu_target_address;
 uint32_t dfu_origin_addr(void) {
     if (ram_mode)
         return ram_mode;
-    return CONFIG_RESCUE_IMAGE_OFFSET + SPIFLASH_BASE;
+    return start_addr + SPIFLASH_BASE;
+}
+
+void dfu_setaltmode(uint16_t value){
+    switch(value){
+        case 0: start_addr = 0x080000; break;
+        case 1: start_addr = 0x100000; break;
+        default: break;
+    }
 }
 
 static void set_state(dfu_state_t new_state, dfu_status_t new_status) {
@@ -145,7 +158,7 @@ static uint32_t address_for_block(unsigned blockNum)
     if (ram_mode)
         starting_offset = ram_mode;
     else
-        starting_offset = CONFIG_RESCUE_IMAGE_OFFSET;
+        starting_offset = start_addr;
 
     return starting_offset + (blockNum * DFU_TRANSFER_SIZE);
 }

@@ -35,6 +35,7 @@ import spibone
 
 import argparse
 import os
+import subprocess
 
 from rtl.version import Version
 from rtl.romgen import RandomFirmwareROM, FirmwareROMHex
@@ -205,6 +206,9 @@ class BaseSoC(SoCCore, AutoDoc):
         if hasattr(platform, "add_button"):
             platform.add_button(self)
 
+        bootloader_size = 512*1024
+        self.add_constant("FLASH_MAX_ADDR", value=platform.spi_size - bootloader_size)
+
         # Allow the user to reboot the ICE40.  Additionally, connect the CPU
         # RESET line to a register that can be modified, to allow for
         # us to debug programs even during reset.
@@ -228,7 +232,11 @@ class BaseSoC(SoCCore, AutoDoc):
 
         if hasattr(platform, "build_templates"):
             platform.build_templates(use_dsp, pnr_seed, placer)
-            
+
+        git_version_subprocess = subprocess.Popen("git describe --tags", shell=True, stdout=subprocess.PIPE)
+        git_version = git_version_subprocess.stdout.read().decode("utf-8").strip()
+        for (name,value) in platform.get_config(git_version):
+            self.add_constant("CONFIG_" + name, value)
 
 def main():
     parser = argparse.ArgumentParser(

@@ -200,6 +200,64 @@ int spiInit(void) {
 	return 0;
 }
 
+
+void spiSetQE(void){
+	// Check for supported FLASH ID
+	uint32_t id = spiId();
+
+    if(id == 0xc2152815){
+        // Set QE bit on MX25R1635F if not set
+        // READ status register
+        uint8_t status = spi_read_status();
+        // Check Quad Enable bit
+        if((status & 0x40) == 0){
+            // Enable Write-Enable Latch (WEL)
+            spiBegin();
+            spi_single_tx(0x06);
+            spiEnd();
+
+            // Write back status with QE bit set
+            status |= 0x40;
+            spiBegin();
+            spi_single_tx(0x01);
+            spi_single_tx(status);
+            spiEnd();
+            
+            // loop while write in progress set
+            while(spi_read_status() & 1) {}
+        }
+    }else if(id == 0x1f138501){
+        // Set QE bit on AT25SF081 if not set
+        
+		// READ status register
+        uint8_t status1 = spi_read_status();
+
+		spiBegin();
+		spi_single_tx(0x35);
+		uint8_t status2 = spi_single_rx();
+		spiEnd();
+        
+		// Check Quad Enable bit
+        if((status2 & 0x02) == 0){
+            // Enable Write-Enable Latch (WEL)
+            spiBegin();
+            spi_single_tx(0x06);
+            spiEnd();
+
+            // Write back status1 and status2 with QE bit set
+            status2 |= 0x02;
+            spiBegin();
+            spi_single_tx(0x01);
+            spi_single_tx(status1);
+            spi_single_tx(status2);
+            spiEnd();
+            
+            // loop while write in progress set
+            while(spi_read_status() & 1) {}
+        }
+    }
+}
+
 void spiHold(void) {
 	spiBegin();
 	spi_single_tx(0xb9);
