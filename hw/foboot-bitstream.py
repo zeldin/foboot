@@ -101,13 +101,15 @@ class BaseSoC(SoCCore, AutoDoc):
                  **kwargs):
         # Disable integrated RAM as we'll add it later
         self.integrated_sram_size = 0
+        if hasattr(platform, "get_integrated_sram_size"):
+            self.integrated_sram_size = platform.get_integrated_sram_size()
 
         self.output_dir = output_dir
 
         clk_freq = int(12e6)
         platform.add_crg(self)
 
-        SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=0, with_uart=False, csr_data_width=32, **kwargs)
+        SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=self.integrated_sram_size, with_uart=False, csr_data_width=32, **kwargs)
         
         usb_debug = False
         if debug is not None:
@@ -139,10 +141,11 @@ class BaseSoC(SoCCore, AutoDoc):
             if hasattr(self, "cpu") and not isinstance(self.cpu, CPUNone):
                 platform.add_cpu_variant(self)
 
-        # SPRAM- UP5K has single port RAM, might as well use it as SRAM to
-        # free up scarce block RAM.
-        spram_size = platform.add_sram(self)
-        self.register_mem("sram", self.mem_map["sram"], self.spram.bus, spram_size)
+        if hasattr(platform, "add_sram"):
+            # SPRAM- UP5K has single port RAM, might as well use it as SRAM to
+            # free up scarce block RAM.
+            spram_size = platform.add_sram(self)
+            self.register_mem("sram", self.mem_map["sram"], self.spram.bus, spram_size)
 
         # Add a Messible for device->host communications
         self.submodules.messible = Messible()
@@ -184,7 +187,7 @@ class BaseSoC(SoCCore, AutoDoc):
 
         # Add USB pads, as well as the appropriate USB controller.  If no CPU is
         # present, use the DummyUsb controller.
-        usb_pads = platform.request("usb")
+        usb_pads = platform.request_usb()
         usb_iobuf = usbio.IoBuf(usb_pads.d_p, usb_pads.d_n, usb_pads.pullup)
         if hasattr(self, "cpu") and not isinstance(self.cpu, CPUNone):
             self.submodules.usb = eptri.TriEndpointInterface(usb_iobuf, debug=usb_debug)
@@ -209,7 +212,7 @@ class BaseSoC(SoCCore, AutoDoc):
         bootloader_size = 512*1024
         self.add_constant("FLASH_MAX_ADDR", value=platform.spi_size - bootloader_size)
 
-        # Allow the user to reboot the ICE40.  Additionally, connect the CPU
+        # Allow the user to reboot the FPGA.  Additionally, connect the CPU
         # RESET line to a register that can be modified, to allow for
         # us to debug programs even during reset.
         platform.add_reboot(self)

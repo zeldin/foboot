@@ -100,6 +100,9 @@ class Platform(LatticePlatform):
         except:
             ...
 
+    def request_usb(self):
+        return self.request("usb")
+
     def build_templates(self, use_dsp, pnr_seed, placer):
         # Override default LiteX's yosys/build templates
         assert hasattr(self.toolchain, "yosys_template")
