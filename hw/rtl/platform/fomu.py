@@ -98,6 +98,9 @@ class Platform(LatticePlatform):
     def add_rgb(self, soc):
         soc.submodules.rgb = SBLED(self.revision, self.request("rgb_led"))
 
+    def request_usb(self):
+        return self.request("usb")
+
     def create_programmer(self):
         raise ValueError("programming is not supported")
 

@@ -198,11 +198,10 @@ void reboot(void) {
     spiFree();
 
     // Scan for configuration data.
-    int i;
     int riscv_boot = 0;
-#if defined(CONFIG_FOMU_REV)
+#if defined(CONFIG_BITSTREAM_SYNC_HEADER1)
     uint32_t *destination_array = (uint32_t *)reboot_addr;
-    for (i = 0; i < 32; i++) {
+    for (int i = 0; i < 32; i++) {
         // Look for FPGA sync pulse.
         if ((destination_array[i] == CONFIG_BITSTREAM_SYNC_HEADER1)
          || (destination_array[i] == CONFIG_BITSTREAM_SYNC_HEADER2)) {
@@ -214,7 +213,7 @@ void reboot(void) {
             boot_config = destination_array[i + 1];
         }
     }
-#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2)
+#else
     char *destination_array = (char *)reboot_addr;
     // We want to support murtiple parts, 
     // so we just check the start of the bitstream header.
@@ -266,7 +265,7 @@ static void init(void)
         maybe_boot_fbm();
         lxspi_bitbang_en_write(1);
     }
-#elif defined(CONFIG_ORANGECRAB_REV_R0_1) | defined(CONFIG_ORANGECRAB_REV_R0_2)
+#elif defined(CSR_BUTTON_BASE)
     if(!button_pressed()){
         spiFree();
         reboot();
