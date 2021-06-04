@@ -93,6 +93,8 @@ class Version(Module, AutoCSR, AutoDoc):
                 model_val = 0x10 # 'r0.1'
             elif model == "r0_2":
                 model_val = 0x11 # 'r0.2'
+        elif hw_platform == "orangecart":
+            model_val = 0x63 # 'c'
 
         (major, minor, rev, gitrev, gitextra, dirty) = get_gitver()
 

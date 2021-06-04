@@ -230,6 +230,7 @@ class BaseSoC(SoCCore, AutoDoc):
                 ("0x48", "H", "Fomu Hacker"),
                 ("0x11", "1", "OrangeCrab r0.1"),
                 ("0x12", "2", "OrangeCrab r0.2"),
+                ("0x63", "c", "OrangeCart"),
                 ("0x3f", "?", "Unknown model"),
             ])
 
@@ -253,7 +254,7 @@ def main():
         help="Don't build gateware or software, only build documentation"
     )
     parser.add_argument(
-        "--platform", choices=["fomu", "orangecrab"], required=True,
+        "--platform", choices=["fomu", "orangecrab", "orangecart"], required=True,
         help="build foboot for a particular hardware"
     )
     parser.add_argument(
@@ -285,6 +286,8 @@ def main():
     # Select platform based arguments
     if args.platform == "orangecrab":
         from rtl.platform.orangecrab import Platform, add_platform_args
+    elif args.platform == "orangecart":
+        from rtl.platform.orangecart import Platform, add_platform_args
     elif args.platform == "fomu":
         from rtl.platform.fomu import Platform, add_platform_args
 
@@ -295,6 +298,8 @@ def main():
     # load our platform file
     if args.platform == "orangecrab":
         platform = Platform(revision=args.revision, device=args.device)
+    elif args.platform == "orangecart":
+        platform = Platform(device=args.device)
     elif args.platform == "fomu":
         platform = Platform(revision=args.revision)
 
