@@ -296,8 +296,12 @@ bool dfu_getstatus(uint8_t status[8])
             break;
 
         case dfuMANIFEST:
+#if 0
             // Perform the reboot
             set_state(dfuMANIFEST_WAIT_RESET, OK);
+#else
+            set_state(dfuIDLE, OK);
+#endif
             dfu_poll_timeout_ms = MANIFEST_TIMEOUT_MS;
             break;
 
