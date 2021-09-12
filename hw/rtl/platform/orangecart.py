@@ -54,9 +54,9 @@ class Platform(LatticePlatform):
             ("USB_PRODUCT_ID", 0x000c),    # FIXME: Test PID
             ("USB_DEVICE_VER", 0x0101),    # Bootloader version
             ("USB_MANUFACTURER_NAME", "Marcus"),
-            ("USB_ALT0_NAME", "0x00080000 Bitstream"),
+            ("USB_ALT0_NAME", "0x00040000 Bitstream"),
             ("USB_ALT1_NAME", "0x00100000 ROM"),
-            ("USB_ALT0_ADDR", 0x00080000),
+            ("USB_ALT0_ADDR", 0x00040000),
             ("USB_ALT1_ADDR", 0x00100000),
 	    ("USB_PRODUCT_NAME", "OrangeCart DFU Bootloader {}".format(git_version))
 	    ]
@@ -152,7 +152,7 @@ class Platform(LatticePlatform):
         output_bitstream = os.path.join(output_dir, "gateware", "foboot.bit")
 
         spi_mode = '--spimode qspi'
-        os.system(f"ecppack {spi_mode} --freq 38.8 --compress --bootaddr 0x80000 --input {input_rom_config} --bit {output_bitstream}")
+        os.system(f"ecppack {spi_mode} --freq 38.8 --compress --bootaddr 0x40000 --input {input_rom_config} --bit {output_bitstream}")
 
         # create a SVF for loading with JTAG adapter
         #output_svf = os.path.join(output_dir, "gateware", "top.svf")
