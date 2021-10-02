@@ -79,8 +79,8 @@ uint32_t dfu_origin_addr(void) {
 
 void dfu_setaltmode(uint16_t value){
     switch(value){
-        case 0: start_addr = 0x080000; break;
-        case 1: start_addr = 0x100000; break;
+        case 0: start_addr = CONFIG_USB_ALT0_ADDR; break;
+        case 1: start_addr = CONFIG_USB_ALT1_ADDR; break;
         default: break;
     }
 }
