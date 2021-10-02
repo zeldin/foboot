@@ -210,8 +210,8 @@ class _CRG(Module):
         self.submodules.pll = pll = ECP5PLL()
         pll.register_clkin(clk48_raw, 48e6)
 
-        pll.create_clkout(self.cd_usb_48, 48e6, 0)
-        pll.create_clkout(self.cd_usb_12, 12e6, 0)
+        pll.create_clkout(self.cd_usb_48, 48e6, 0, with_reset=False)
+        pll.create_clkout(self.cd_usb_12, 12e6, 0, with_reset=False)
 
         self.comb += self.cd_sys.clk.eq(self.cd_usb_12.clk)
         
