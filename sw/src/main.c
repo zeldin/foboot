@@ -226,16 +226,16 @@ void reboot(void) {
     }
 #endif
 
-    if (riscv_boot) {
-        riscv_reboot_to((void *)reboot_addr, boot_config);
-    }
-    else {
+    //if (riscv_boot) {
+   // //    riscv_reboot_to((void *)reboot_addr, boot_config);
+    //}
+    //else {
         // Issue a reboot
         while(1){
             // For some reason writing to this register can fail if followed by an empty while loop
             reboot_ctrl_write(0xac); 
         }
-    }
+   // }
     __builtin_unreachable();
 }
 

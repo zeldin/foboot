@@ -67,7 +67,7 @@ class Platform(LatticePlatform):
         self.device = device
         self.hw_platform = "DiVA"
 
-        self.spi_size = 2*1024*1024
+        self.spi_size = 1*1024*1024
         self.spi_dummy = 6
 
         LatticePlatform.__init__(self, "LFE5U-" + device + "-8MG285C", _io, [], toolchain=toolchain)
@@ -171,7 +171,7 @@ class Platform(LatticePlatform):
         #input_config = os.path.join(output_dir, "gateware", "top.config")
         output_bitstream = os.path.join(output_dir, "gateware", "foboot.bit")
 
-        os.system(f"ecppack --freq 38.8 --compress --bootaddr 0x80000 --input {input_rom_config} --bit {output_bitstream}")
+        os.system(f"ecppack --freq 38.8 --compress --bootaddr 0x40000 --input {input_rom_config} --bit {output_bitstream}")
 
 
 
@@ -184,6 +184,8 @@ class Platform(LatticePlatform):
         {output_dir}/gateware/top.v               Source Verilog file.  Useful for debugging issues.
         {output_dir}/software/include/generated/  Directory with header files for API access.
         {output_dir}/software/bios/bios.elf       ELF file for debugging bios.
+
+        File size in hex: {os.path.getsize(output_bitstream) :08X}
     """)
 
 
