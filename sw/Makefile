@@ -2,7 +2,11 @@
 ifneq (,$(wildcard /usr/bin/riscv32-unknown-elf-gcc))
 TRGT       ?= riscv32-unknown-elf-
 else
+ifneq (,$(shell which riscv-none-embed-gcc))
+TRGT       ?= riscv-none-embed-
+else
 TRGT       ?= riscv64-unknown-elf-
+endif
 endif
 
 CC         := $(TRGT)gcc

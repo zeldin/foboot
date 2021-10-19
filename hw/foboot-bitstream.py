@@ -299,14 +299,13 @@ def main():
         platform = Platform(revision=args.revision)
 
     output_dir = 'build'
-    #if args.export_random_rom_file is not None:
     rom_rand = os.path.join(output_dir, "gateware", "rand_rom.hex")
-    os.system(f"ecpbram  --generate {rom_rand} --seed {0} --width {32} --depth {int(0x4000/4)}")
+    os.makedirs(os.path.dirname(rom_rand), exist_ok=True)
+    os.system(f"ecpbram  --generate {rom_rand} --seed {0} --width {32} --depth {0x4000//4}")
+    args.bios = rom_rand
 
-    compile_software = False
-    if (args.boot_source == "bios" or args.boot_source == "spi") and args.bios is None:
-        compile_software = True
-
+    compile_software = True
+    
     compile_gateware = True
     if args.skip_gateware:
         compile_gateware = False
@@ -341,6 +340,15 @@ def main():
         builder.software_packages = [
             ("bios", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sw")))
         ]
+
+
+        soc.finalize()
+        #builder._prepare_rom_software()
+        builder._generate_includes()
+        builder._generate_rom_software()
+        builder.compile_software = False
+        
+
     vns = builder.build()
     soc.do_exit(vns)
     lxsocdoc.generate_docs(soc, "build/documentation/", project_name="Fomu Bootloader", author="Sean Cross")

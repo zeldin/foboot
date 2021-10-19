@@ -19,3 +19,14 @@
 [submodule "hw/deps/spibone"]
 	path = hw/deps/spibone
 	url = https://github.com/xobs/spibone.git
+[submodule "deps/valentyusb"]
+	url = https://github.com/litex-hub/valentyusb
+[submodule "hw/deps/pythondata-software-compiler_rt"]
+	path = hw/deps/pythondata-software-compiler_rt
+	url = https://github.com/litex-hub/pythondata-software-compiler_rt.git
+[submodule "hw/deps/pythondata-software-picolibc"]
+	path = hw/deps/pythondata-software-picolibc
+	url = https://github.com/litex-hub/pythondata-software-picolibc.git
+[submodule "hw/deps/pythondata-cpu-vexriscv"]
+	path = hw/deps/pythondata-cpu-vexriscv
+	url = https://github.com/litex-hub/pythondata-cpu-vexriscv.git
