@@ -343,7 +343,7 @@ def main():
 
 
         soc.finalize()
-        #builder._prepare_rom_software()
+        builder._prepare_rom_software()
         builder._generate_includes()
         builder._generate_rom_software()
         builder.compile_software = False
