@@ -6,6 +6,7 @@ ifneq (,$(shell which riscv-none-embed-gcc))
 TRGT       ?= riscv-none-embed-
 else
 TRGT       ?= riscv64-unknown-elf-
+SPECS      ?= -specs=picolibc.specs
 endif
 endif
 
@@ -44,7 +45,7 @@ SRC_DIR    := $(BASE_DIR)/src
 THIRD_PARTY := $(BASE_DIR)/third_party
 DBG_CFLAGS := -ggdb3 -DDEBUG -Wall
 DBG_LFLAGS := -ggdb3 -Wall
-CFLAGS     := $(ADD_CFLAGS) \
+CFLAGS     := $(ADD_CFLAGS) $(SPECS) \
 			  -D__vexriscv__ -march=rv32i  -mabi=ilp32 \
 			  -Wall -Wextra \
 			  -flto \
@@ -58,7 +59,7 @@ LFLAGS     := $(CFLAGS) $(ADD_LFLAGS) -L$(LD_DIR) \
 			  -nostdlib \
 			  -Wl,--gc-sections \
 			  -Wl,--no-warn-mismatch \
-			  -Wl,--script=$(LDSCRIPT) \
+			  -T$(LDSCRIPT) \
 			  -Wl,--build-id=none
 
 OBJ_DIR    := .obj
