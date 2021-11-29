@@ -2,8 +2,6 @@ from migen import Module, Signal, Instance, ClockDomain, If
 
 from litex.build.lattice.platform import LatticePlatform
 
-from litex.soc.cores import up5kspram, spi_flash
-
 from litex.soc.cores.clock import ECP5PLL
 from migen.genlib.resetsync import AsyncResetSynchronizer
 
