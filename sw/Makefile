@@ -58,7 +58,7 @@ LFLAGS     := $(CFLAGS) $(ADD_LFLAGS) -L$(LD_DIR) \
 			  -nostdlib \
 			  -Wl,--gc-sections \
 			  -Wl,--no-warn-mismatch \
-			  -Wl,--script=$(LDSCRIPT) \
+			  -T$(LDSCRIPT) \
 			  -Wl,--build-id=none
 
 OBJ_DIR    := .obj
