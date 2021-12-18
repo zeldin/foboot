@@ -15,7 +15,8 @@
 	url = https://github.com/im-tomu/valentyusb.git
 [submodule "hw/deps/litex-boards"]
 	path = hw/deps/litex-boards
-	url = https://github.com/litex-hub/litex-boards.git
+	url = https://github.com/zeldin/litex-boards.git
+	branch = orangecart
 [submodule "hw/deps/spibone"]
 	path = hw/deps/spibone
 	url = https://github.com/xobs/spibone.git
@@ -25,3 +26,6 @@
 [submodule "hw/deps/pythondata-software-compiler_rt"]
 	path = hw/deps/pythondata-software-compiler_rt
 	url = https://github.com/litex-hub/pythondata-software-compiler_rt.git
+[submodule "hw/deps/litehyperram"]
+	path = hw/deps/litehyperram
+	url = https://github.com/zeldin/litehyperram.git
