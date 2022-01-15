@@ -30,6 +30,8 @@ import struct
 from litex.soc.integration.common import get_mem_data
 from litex_boards.platforms.orangecart import Platform as PlatformOC
 
+from util.ecp5_background_spi_flash import create_spi_flash_svf
+
 def add_platform_args(parser):
     parser.add_argument(
         "--device", choices=["25F", "45F", "85F"], default="25F",
@@ -159,9 +161,8 @@ class Platform(LatticePlatform):
         #os.system(f"ecppack --input {input_rom_config} --svf {output_svf}")
 
         # create an SVF for loading into SPI FLASH with a simple JTAG adapter
-        #output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
-        #os.system(f"python3 util/ecp5_background_spi.py {output_bitstream} {output_svf}")
-
+        output_svf = os.path.join(output_dir, "gateware", "foboot_jtag_spi.svf")
+        create_spi_flash_svf(output_bitstream, output_svf)
 
 
 
