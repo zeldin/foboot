@@ -53,7 +53,7 @@ class Platform(LatticePlatform):
     def get_config(self, git_version):
         return [
             ("USB_VENDOR_ID", 0x1209),     # pid.codes
-            ("USB_PRODUCT_ID", 0x000c),    # FIXME: Test PID
+            ("USB_PRODUCT_ID", 0x5a0c),    # Assigned to OrangeCart DFU
             ("USB_DEVICE_VER", 0x0101),    # Bootloader version
             ("USB_MANUFACTURER_NAME", "Marcus"),
             ("USB_ALT0_NAME", "0x00040000 Bitstream"),
