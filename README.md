@@ -1,6 +1,10 @@
-# Foboot: The Bootloader for Fomu
+**Note:** The original `README.md` was moved to [`README.fomu.md`](README.fomu.md).
 
-Foboot is a failsafe bootloader for Fomu.  It exposes a DFU interface to the host.  Foboot comes in two halves: A Software half and a Hardware half.  These two halves are integrated into a single "bitstream" that is directly loaded onto an ICE40UP5k board, such as Fomu.
+# Bootloader for the Orange Cartridge
+
+This is a failsafe bootloader for the Orange Cartridge.  It is based
+on the bootloader for the Orange Crab board, which was in turn bases
+on the bootloader for the Fomu board.
 
 ## Requirements
 
@@ -8,7 +12,7 @@ To build the hardware, you need:
 
 * Python 3.5+
 * Nextpnr
-* Icestorm
+* Project Trellis
 * Yosys
 * Git
 
@@ -20,135 +24,89 @@ To build the software, you need:
 
 ## Building the project
 
-The hardware half will take care of building the software half, if it is run with `--boot-source bios` (which is the default).  Therefore, to build Foboot, enter the `hw/` directory and run:
+The hardware half will take care of building the software half, if it is run with `--boot-source bios` (which is the default).  Therefore, to build the bootloader, enter the `hw/` directory and run:
 
 ```
-$ python3 foboot-bitstream.py --revision hacker --seed 19
+$ python3 foboot-bitstream.py --platform orangecart
 ```
 
-This will verify you have the correct dependencies installed, compile the Foboot software, then synthesize the Foboot bitstream.  The resulting output will be in `build/gateware/`.  You should write `build/gateware/top-multiboot.bin` to your Fomu device in order to get basic bootloader support.
-
-The `seed` argument is to set initial conditions for the
-place-and-route phase.  `nextpnr-ice40` uses a simulated annealing
-algorithm that can result in one of several locally optimal layouts.
-Only some of these will meet the timing requirements for Fomu.
+This will verify you have the correct dependencies installed, compile the bootloader software, then synthesize the bootloader bitstream.  The resulting output will be in `build/gateware/`.  You should write `build/gateware/foboot.bit` to your SPI flash in order to get basic bootloader support.
 
 If you see something like
 ```
-ERROR: Max frequency for clock 'clk48_$glb_clk': 45.41 MHz (FAIL at 48.00 MHz)
+Hexfiles have different number of words! (0 vs. 1474)
+Failed to open input file
 ```
-try a different seed.  You can search for an appropriate seed with:
-```
-for seed in $(seq 0 100)
-do
-  python3 ./foboot-bitstream.py --revision pvt --seed $seed 2>&1 |
-     grep 'FAIL at 48.00 MHz' && continue
-  echo "Working Seed is $seed"
-  break
-done
-```
-This can take a considerable time.
+
+Just run `foboot-bitstream.py` again and it should sort itself out.
 
 ### Usage
 
 You can write the bitstream to your SPI flash.
 
-#### Loading using `fomu-flash`
+#### Loading using [`ecpprog`](https://github.com/gregdavill/ecpprog)
 
-If you're using `fomu-flash`, you would run the following:
+If you're using `ecpprog`, you would run the following:
 
 ```sh
-$ fomu-flash -w build/gateware/top-multiboot.bin
-Erasing @ 018000 / 01973a  Done
-Programming @ 01973a / 01973a  Done
-$ fomu-flash -r
-resetting fpga
+$ ecpprog build/gateware/foboot.bit
+init..
+IDCODE: 0x41111043 (LFE5U-25)
+ECP5 Status Register: 0x00200000
+reset..
+flash ID: 0xEF 0x40 0x18
+file size: 236769
+erase 64kB sector at 0x000000..
+erase 64kB sector at 0x010000..
+erase 64kB sector at 0x020000..
+erase 64kB sector at 0x030000..
+programming..  236769/236769
+verify..       236769/236769  VERIFY OK
+Bye.
+$ 
+```
+
+After a power cycle, the Orange Cartridge show now show up when you
+connect it to USB:
+
+```
+[3510871.569595] usb 1-2.1.1.3: new full-speed USB device number 37 using xhci_hcd
+[3510871.682018] usb 1-2.1.1.3: New USB device found, idVendor=1209, idProduct=5a0c, bcdDevice= 1.01
+[3510871.682022] usb 1-2.1.1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+[3510871.682024] usb 1-2.1.1.3: Product: OrangeCart DFU Bootloader v4.0
+[3510871.682026] usb 1-2.1.1.3: Manufacturer: Marcus
+```
+
+#### Using `openocd` to flash the bootloader
+
+To program the SPI flash using openocd, use the following command line (openocd.cfg should
+configure your JTAG adapter):
+
+```sh
+$ openocd -f openocd.cfg -f board/orangecart.cfg -c init -c "svf -quiet build/gateware/foboot_jtag_spi.svf" -c exit
+Open On-Chip Debugger 0.11.0+dev-02577-g3eee6eb04 (2022-02-28-15:37)
+Licensed under GNU GPL v2
+For bug reports, read
+	http://openocd.org/doc/doxygen/bugs.html
+ftdi samples TDO on falling edge of TCK
+
+Info : clock speed 10000 kHz
+Info : JTAG tap: ecp5.tap tap/device found: 0x41111043 (mfg: 0x021 (Lattice Semi.), part: 0x1111, ver: 0x4)
+Warn : gdb services need one or more targets defined
+svf processing file: "build/gateware/foboot_jtag_spi.svf"
+
+Time used: 0m12s359ms 
+svf file programmed successfully for 4680 commands with 0 errors
+
 $
 ```
 
-Fomu should now show up when you connect it to your machine:
-
-```
-[172294.296354] usb 1-1.3: new full-speed USB device number 33 using dwc_otg
-[172294.445661] usb 1-1.3: New USB device found, idVendor=1209, idProduct=70b1
-[172294.445675] usb 1-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-[172294.445684] usb 1-1.3: Product: Fomu Bootloader (0)
-[172294.445692] usb 1-1.3: Manufacturer: Kosagi
-```
-
-#### Using `dfu-util` to flash the bootloader
-
-##### Safe way to test
-
-Just do
-```sh
-dfu-util -D build/gateware/top.bin
-```
-to copy into the SPI flash, then
-```sh
-dfu-util -e
-```
-each time you want to run the generated bitstream after a reboot.
-
-A multiboot enabled bootloader is also generated; you can try that out
-with
-```sh
-dfu-util -D build/gateware/top-multiboot.bin
-```
-
-`dfu-util` loads the bootloader into flash at 0x40000; it'll be overridden
-by any other code you attempt to flash using `dfu-util`
-
-##### Loading the bootloader as first bootloader
-
-**WARNING: Flashing a new bootloader could _brick your device_**
-**It's best to wait for an official release**
-
-First build the flasher program, that will run on the Fomu (you only
-need to do this once):
-```sh
-cd booster
-cc -O2 -o make-booster -I ./include make-booster.c
-```
-
-Then package everything up ready for loading:
-```sh
-cd releases
-bash ./release.sh pvt
-```
-This will create a new directory in `releases` named by the head of
-your git tree and the last official release.  So you'll see something
-like `v2.0.3-8-g485d232`
-
-In that directory will be a file named `pvt-updater-`_version_`.dfu`
-Load  it onto the Fomu using `dfu-util`:
-```sh
-dfu-util -D pvt-updater-v2.0.3-8-g485d232.dfu
-```
-Your Fomu will flash rainbow for about five seconds, then reboot and
-go back to blinking steadily.   To verify that your code has loaded, use
-```sh
-dfu-util -l
-```
-and look at the version output.
-
-#### Loading and running other bitstreams
-To load a new bitstream, use the `dfu-util -D` command.  For example:
+#### Loading and running bitstreams
+To load a new bitstream, use the `dfu-util -a 0 -D` command.  For example:
 
 ```sh
-$ dfu-util -D blink.bin
+$ dfu-util -a 0 -D build/gateware/orangecart.bit
 ```
 
-This will reflash the SPI beginning at offset 262144.
-
-To exit DFU and run the bitstream at offset 262144, run:
-
-```sh
-$ dfu-util -e
-```
-
-**Note that, like Toboot, the program will auto-boot once it has finished loading.**
-
-## Building the Software
-
-Software is contained in the `sw/` directory.
+Use `-a 1` to upload to the data area following the bitstream, which can be used as input by
+the bitstream itself.
