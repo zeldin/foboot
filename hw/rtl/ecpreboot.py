@@ -1,4 +1,4 @@
-from migen import Module, Signal, If, Instance
+from migen import Module, Signal, TSTriple, If, Instance
 from litex.soc.integration.doc import ModuleDoc
 from litex.soc.interconnect.csr import AutoCSR, CSRStatus, CSRStorage, CSRField
 
@@ -38,8 +38,11 @@ class ECPReboot(Module, AutoCSR):
         ]
 
         rst = parent.platform.request("rst_n")
+        ts = TSTriple()
+        self.specials += ts.get_tristate(rst)
         self.comb += [
-            rst.eq(~reset_latch)
+            ts.o.eq(0),
+            ts.oe.eq(reset_latch)
         ]
         
         parent.config["BITSTREAM_SYNC_HEADER1"] = 0x7e99aa7e
